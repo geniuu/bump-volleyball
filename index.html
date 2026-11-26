@@ -70,7 +70,21 @@ body{font:16px/1.5 "Baloo 2","Noto Sans TC","PingFang TC","Microsoft JhengHei",s
 .ac-s{color:#556;font-weight:700}.ac-s b{color:#1d2433}
 .ac-b{border:0;border-radius:999px;background:#eef1f5;font:inherit;font-weight:800;font-size:14px;min-height:38px;padding:0 14px;color:#1d2433}
 .ac-b.g{background:#fff;box-shadow:0 0 0 2px #d6dbe3;padding:0 18px}.ac-m{width:100%;text-align:center;color:#e8443a;font-weight:700;font-size:13px}
-#lbv{z-index:5}#lbCard{width:min(520px,100%);text-align:left}
+#lbv{z-index:5}
+#chatBtn{position:fixed;left:calc(env(safe-area-inset-left) + 12px);top:calc(env(safe-area-inset-top) + 12px);z-index:6;display:none;border:0;border-radius:999px;background:#fff;color:#1d2433;font:inherit;font-weight:800;min-height:42px;padding:0 16px;box-shadow:0 4px 0 rgba(0,0,0,.15)}
+#chatBtn.show{display:block}body[data-m=game] #chatBtn{display:none}
+#chatN{position:absolute;right:-6px;top:-6px;min-width:22px;height:22px;border-radius:11px;background:#e8443a;color:#fff;font-size:12px;display:none;place-items:center;padding:0 5px}
+#chatv{position:fixed;z-index:7;top:0;right:0;bottom:0;width:min(380px,100vw);background:#fff;display:flex;flex-direction:column;box-shadow:-6px 0 24px rgba(0,0,0,.18);padding:calc(env(safe-area-inset-top) + 10px) 12px calc(env(safe-area-inset-bottom) + 8px)}
+#chatv.hide{display:none}body[data-m=game] #chatv{display:none}
+.chd{display:flex;justify-content:space-between;align-items:center;font-size:18px;padding-bottom:6px;border-bottom:1px solid #e3e6ea}
+#chatList{flex:1;overflow-y:auto;padding:8px 2px;display:flex;flex-direction:column;gap:8px}
+.cm{display:flex;flex-direction:column;align-items:flex-start;max-width:86%}.cm.me{align-self:flex-end;align-items:flex-end}
+.cb{background:#f1f4f7;border-radius:14px;padding:6px 10px;font-size:15px;line-height:1.4;overflow-wrap:anywhere}.cm.me .cb{background:#dff3ef}
+.cb b{display:block;font-size:12px;color:#1f9e92}.cm small{font-size:11px;color:#8a93a6;margin:2px 4px}
+.cx{border:0;background:none;color:#8a93a6;font:inherit;font-size:11px;text-decoration:underline;padding:0 2px;min-height:auto}
+.chf{display:flex;gap:6px;padding-top:6px;border-top:1px solid #e3e6ea}.chf input{flex:1;font:inherit;font-size:16px;border:2px solid #ccd;border-radius:12px;padding:8px 10px;min-height:44px}
+#chatHint{margin:4px 0 0;font-size:12px;color:#e8443a;min-height:1em}
+@media (max-aspect-ratio:1/1){#chatv{top:auto;height:72vh;height:72dvh;width:100vw;border-radius:18px 18px 0 0}}#lbCard{width:min(520px,100%);text-align:left}
 #menu{background:linear-gradient(90deg,rgba(20,40,60,.25),transparent 55%);justify-content:flex-start;padding-left:max(4vw,16px)}
 .card.menu{width:min(350px,100%);background:rgba(255,255,255,.93);margin:auto 0}
 @media (max-aspect-ratio:1/1){#menu{justify-content:center;align-items:flex-end;padding:12px;background:linear-gradient(180deg,transparent 45%,rgba(20,40,60,.25))}.card.menu{margin:auto 0 0}}
@@ -186,6 +200,9 @@ button:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
 <div id="mv" class="ov side hide"><div class="card cv" id="mvCard"></div></div>
 <div id="lbv" class="ov hide"><div class="card cv" id="lbCard"></div></div>
 <div id="mgst"></div>
+<button id="chatBtn" aria-label="聊天室">聊天<span id="chatN"></span></button>
+<div id="chatv" class="hide"><div class="chd"><b>家族聊天室</b><button id="chatX" class="lnk" aria-label="關閉聊天室">關閉</button></div><div id="chatList"></div>
+ <div class="chf"><input id="chatIn" maxlength="200" placeholder="輸入訊息…" aria-label="輸入訊息" autocomplete="off"><button id="chatSend" class="buy">送出</button></div><p id="chatHint"></p></div>
 <div id="mgrbar"><button data-s="1" class="on">×1</button><button data-s="2">×2</button><button data-s="4">×4</button><button id="tacBtn">戰術：均衡</button><button id="skipBtn">略過</button></div>
 <div id="over" class="ov hide">
   <div class="card">
@@ -209,6 +226,9 @@ else try{
   get:async k=>{const s=await F.getDoc(me());return s.exists()?(s.data()[k]||null):null},
   put:(k,v)=>F.setDoc(me(),{[k]:v,updatedAt:F.serverTimestamp()},{merge:true}),
   submit:d=>F.setDoc(F.doc(db,'leaderboard',auth.currentUser.uid),{name:d.name,career:d.career,mgr:d.mgr,updatedAt:F.serverTimestamp()}),
+  chatSub:(cb,err)=>F.onSnapshot(F.query(F.collection(db,'chat'),F.orderBy('ts','desc'),F.limit(60)),q=>cb(q.docs.map(x=>({id:x.id,...x.data({serverTimestamps:'estimate'})})).reverse()),err),
+  chatSend:(name,text)=>F.addDoc(F.collection(db,'chat'),{uid:auth.currentUser.uid,name,text,ts:F.serverTimestamp()}),
+  chatDel:id=>F.deleteDoc(F.doc(db,'chat',id)),
   board:async()=>(await F.getDocs(F.query(F.collection(db,'leaderboard'),F.orderBy('updatedAt','desc'),F.limit(100)))).docs.map(x=>({id:x.id,...x.data()}))};
  A.getRedirectResult(auth).catch(()=>{});
  A.onAuthStateChanged(auth,u=>fire(u));
@@ -1332,6 +1352,34 @@ $('#lbCard').addEventListener('click',async e=>{const b=e.target.closest('[data-
  if(a.startsWith('t:')){lbTab=a.slice(2);renderBoard()}
  if(a==='nick'){const v=$('#nick').value.trim().slice(0,12);if(!v)return;try{localStorage.setItem('bump_nick',v)}catch(er){}renderAcct();await FB.submit(boardData()).catch(()=>{});lbRows=await FB.board().catch(()=>lbRows);renderBoard()}});
 renderAcct();
+
+/* ---------- online chat (Firestore realtime) ---------- */
+const CHAT={unsub:null,msgs:[],open:false,last:0,err:''};
+try{CHAT.seen=+localStorage.getItem('bump_chat_seen')||0}catch(e){CHAT.seen=0}
+const tsMs=m=>m.ts&&m.ts.toMillis?m.ts.toMillis():Date.now();
+function chatStart(){chatStop();if(!cloudOn()||!FB.chatSub)return;CHAT.err='';
+ CHAT.unsub=FB.chatSub(ms=>{CHAT.msgs=ms;renderChat()},e=>{CHAT.err=e&&e.code==='permission-denied'?'聊天室還沒開放：請把新的 firestore.rules 貼到 Firebase 並發布':'聊天室連線中斷，重新整理頁面再試';renderChat()})}
+function chatStop(){if(CHAT.unsub){CHAT.unsub();CHAT.unsub=null}CHAT.msgs=[];renderChat()}
+function chatUnread(){if(!CLOUD.user)return 0;return CHAT.msgs.filter(m=>m.uid!==CLOUD.user.uid&&tsMs(m)>CHAT.seen).length}
+const hhmm=t=>{const d=new Date(t);return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')};
+function renderChat(){const btn=$('#chatBtn');if(!btn)return;const on=cloudOn();btn.classList.toggle('show',on);
+ if(CHAT.open){CHAT.seen=Math.max(CHAT.seen,...CHAT.msgs.map(tsMs),CHAT.seen);try{localStorage.setItem('bump_chat_seen',CHAT.seen)}catch(e){}}
+ const n=chatUnread();$('#chatN').textContent=n>9?'9+':n;$('#chatN').style.display=n?'grid':'none';
+ $('#chatv').classList.toggle('hide',!(on&&CHAT.open));if(!CHAT.open||!on)return;
+ const me=CLOUD.user.uid,box=$('#chatList'),atEnd=box.scrollHeight-box.scrollTop-box.clientHeight<60;
+ box.innerHTML=CHAT.err?`<p class="note" style="color:#e8443a">${esc(CHAT.err)}</p>`:CHAT.msgs.length?CHAT.msgs.map(m=>`<div class="cm${m.uid===me?' me':''}"><div class="cb"><b>${esc(m.name||'玩家')}</b><span>${esc(m.text)}</span></div><small>${hhmm(tsMs(m))}${m.uid===me?` <button class="cx" data-del="${m.id}" aria-label="刪除這則訊息">刪除</button>`:''}</small></div>`).join(''):'<p class="note">還沒有人說話，打聲招呼吧！</p>';
+ if(atEnd||renderChat.first!==false){box.scrollTop=box.scrollHeight;renderChat.first=false}}
+let chatLast=0;
+async function chatSendNow(){const inp=$('#chatIn'),t=inp.value.trim().slice(0,200);if(!t||!cloudOn())return;
+ if(Date.now()-chatLast<1500){$('#chatHint').textContent='慢一點，1.5 秒後再送';return}chatLast=Date.now();inp.value='';$('#chatHint').textContent='';
+ try{await FB.chatSend(acctName(),t)}catch(e){$('#chatHint').textContent=e&&e.code==='permission-denied'?'送不出去：Firebase 規則還沒更新':'送出失敗，請再試一次';inp.value=t}}
+$('#chatBtn').addEventListener('click',()=>{CHAT.open=!CHAT.open;renderChat.first=true;renderChat();if(CHAT.open&&!COARSE)$('#chatIn').focus()});
+$('#chatX').addEventListener('click',()=>{CHAT.open=false;renderChat()});
+$('#chatSend').addEventListener('click',chatSendNow);
+$('#chatIn').addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Enter'&&!e.isComposing){e.preventDefault();chatSendNow()}});
+$('#chatIn').addEventListener('keyup',e=>e.stopPropagation());
+$('#chatList').addEventListener('click',async e=>{const b=e.target.closest('[data-del]');if(b)try{await FB.chatDel(b.dataset.del)}catch(er){}});
+addEventListener('fbauth',e=>{if(e.detail)chatStart();else{CHAT.open=false;chatStop()}});
 
 demoStart();
 window.__dbg={S:()=>S,players:()=>players,cfg,ball,spikeFX,update,ACT,C:()=>C,careerEnd,MACT,MG:()=>MG};
