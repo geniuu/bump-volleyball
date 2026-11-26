@@ -1,0 +1,1341 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>BUMP! 校園排球</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&display=swap" rel="stylesheet">
+<style>
+/* VOICE: sunny, bouncy school-sports-day arcade
+   IDEA: an outdoor school volleyball court on tournament day
+   PICTURE: the live 3D court, school building behind, cheering chibi students in the stands
+   COLOUR and TYPE: red PU court, green apron, cream school walls, sun-yellow accent; Baloo 2 numerals
+   LAYOUT: full-bleed canvas, score pill on top, controls under the thumbs */
+:root{color-scheme:light dark;--coral:#e8604a;--teal:#1f9e92;--sun:#ffd23f;--ink:#1d2433;--blue:#3d7bff;--pink:#ff5d8f;--violet:#8a63ff}
+*{box-sizing:border-box;min-width:0;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;overflow:hidden;background:#9fd6f5;touch-action:none;user-select:none;-webkit-user-select:none}
+body{font:16px/1.5 "Baloo 2","Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;color:var(--ink)}
+#stage,#stage canvas{position:fixed;inset:0;width:100%;height:100%;display:block}
+#hud{position:fixed;left:0;right:0;top:0;padding:calc(env(safe-area-inset-top) + 10px) 12px 0;display:flex;justify-content:center;pointer-events:none}
+.score{display:flex;align-items:center;gap:10px;background:#fff;border-radius:999px;padding:4px 16px;box-shadow:0 4px 0 rgba(0,0,0,.15);font-weight:800}
+.score b{font-size:30px;line-height:1;min-width:1.2em;text-align:center}
+.score i{font-style:normal;opacity:.4}
+.tm{font-size:14px;padding:2px 10px;border-radius:999px;color:#fff;white-space:nowrap}
+.tm.a{background:var(--blue)}.tm.b{background:var(--pink)}
+.srv{width:10px;height:10px;border-radius:50%;background:var(--sun);border:2px solid var(--ink);visibility:hidden}
+#touch{position:fixed;left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top) + 62px);display:flex;gap:6px;pointer-events:none}
+#touch i{width:12px;height:12px;border-radius:50%;background:rgba(255,255,255,.5);border:2px solid #fff}
+#touch i.on{background:var(--sun)}
+#menuBtn{position:fixed;top:calc(env(safe-area-inset-top) + 10px);right:calc(env(safe-area-inset-right) + 12px);pointer-events:auto;font:inherit;font-weight:800;border:0;border-radius:12px;background:rgba(255,255,255,.85);padding:6px 14px;min-height:40px;color:var(--ink)}
+#banner{position:fixed;left:0;right:0;top:calc(env(safe-area-inset-top) + 84px);display:flex;flex-direction:column;align-items:center;gap:2px;pointer-events:none}
+#msg{text-align:center;font-weight:800;font-size:clamp(18px,3.6vw,28px);color:#fff;text-shadow:0 3px 0 var(--ink),0 0 12px rgba(0,0,0,.3);opacity:0;transition:opacity .2s;padding:0 16px;line-height:1.15;white-space:pre-line}
+#cue{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 24px);transform:translateX(-50%);background:var(--sun);border-radius:999px;padding:4px 16px;font-weight:800;box-shadow:0 3px 0 rgba(0,0,0,.2);opacity:0;pointer-events:none;transition:opacity .15s;white-space:nowrap}
+#flash{position:fixed;inset:0;background:#fff8e0;opacity:0;pointer-events:none}
+#lines{position:fixed;inset:-25%;opacity:0;pointer-events:none;background:repeating-conic-gradient(from 0deg,rgba(255,255,255,.95) 0deg 1.1deg,transparent 1.1deg 8deg);-webkit-mask:radial-gradient(circle,transparent 30%,#000 62%);mask:radial-gradient(circle,transparent 30%,#000 62%)}
+#pop{position:fixed;left:calc(env(safe-area-inset-left) + 14px);top:calc(env(safe-area-inset-top) + 58px);pointer-events:none;display:none;text-align:left;font-weight:800;font-style:italic;font-size:clamp(30px,6vw,52px);line-height:1;color:var(--sun);-webkit-text-stroke:2px var(--ink);text-shadow:0 5px 0 var(--ink);opacity:0}
+#pop.go{display:block;transform-origin:0 0;animation:pop .75s ease-out}
+@keyframes pop{0%{opacity:1;transform:scale(1.8) rotate(-10deg)}18%{opacity:1;transform:scale(.95) rotate(-6deg)}30%{transform:scale(1.05) rotate(-6deg)}80%{opacity:1;transform:scale(1.08) rotate(-6deg)}100%{opacity:0;transform:scale(1.15) rotate(-6deg)}}
+@media (prefers-reduced-motion:reduce){#lines,#flash{display:none}#pop.go{animation-duration:.01s}}
+#pad{position:fixed;right:calc(env(safe-area-inset-right) + 14px);bottom:calc(env(safe-area-inset-bottom) + 14px);width:190px;height:175px;display:none}
+#pad button{position:absolute;border:0;border-radius:50%;font:inherit;font-weight:800;color:#fff;box-shadow:0 5px 0 rgba(0,0,0,.25);touch-action:none}
+#pad button.dn{transform:translateY(3px);box-shadow:0 2px 0 rgba(0,0,0,.25)}
+#bAtk{width:92px;height:92px;right:0;bottom:0;background:var(--pink);font-size:28px}
+#bTip{width:66px;height:66px;right:110px;bottom:2px;background:var(--violet);font-size:22px}
+#bPass{width:66px;height:66px;right:86px;bottom:86px;background:var(--blue);font-size:22px}
+#bJump{width:66px;height:66px;right:10px;bottom:104px;background:var(--teal);font-size:22px}
+#joy{position:fixed;width:120px;height:120px;margin:-60px 0 0 -60px;border-radius:50%;background:rgba(255,255,255,.25);border:3px solid rgba(255,255,255,.7);display:none;pointer-events:none}
+#knob{position:absolute;left:50%;top:50%;width:52px;height:52px;margin:-26px;border-radius:50%;background:#fff;box-shadow:0 3px 0 rgba(0,0,0,.2)}
+#keys{position:fixed;left:12px;bottom:10px;font-size:13px;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.6);pointer-events:none}
+.coarse #pad{display:block}.coarse #keys{display:none}
+.ov{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(20,40,60,.35);overflow:auto}
+.ov.hide{display:none}
+.card{background:#fff;border-radius:24px;padding:20px clamp(16px,4vw,30px);width:min(460px,100%);box-shadow:0 10px 0 rgba(0,0,0,.15);text-align:center;margin:auto}
+.card h1{margin:0;font-size:clamp(44px,12vw,64px);line-height:1;color:var(--coral);text-shadow:0 4px 0 var(--ink);letter-spacing:1px}
+.card h2{margin:0 0 6px;font-size:40px;line-height:1.05}
+.sub{margin:4px 0 12px;font-weight:600;color:#556}
+.row{display:flex;align-items:center;gap:8px;margin:8px 0}
+.row label{width:2.6em;flex:none;font-weight:800;text-align:left}
+.seg{display:flex;background:#eef1f5;border-radius:14px;padding:4px;gap:3px;flex:1}
+.seg button{flex:1;border:0;background:transparent;border-radius:10px;font:inherit;font-weight:800;font-size:15px;min-height:40px;padding:0;color:var(--ink);white-space:nowrap}
+.seg button.on{background:var(--teal);color:#fff}
+.go{margin-top:12px;width:100%;border:0;border-radius:16px;background:var(--sun);font:inherit;font-weight:800;font-size:26px;min-height:56px;box-shadow:0 5px 0 #d6a800;color:var(--ink)}
+.go:active{transform:translateY(3px);box-shadow:0 2px 0 #d6a800}
+.go.alt{background:#eef1f5;box-shadow:0 5px 0 #c9ced6;font-size:20px;min-height:48px}
+.how{margin:12px 0 0;padding:12px 14px;background:#f4f8f7;border-radius:14px;text-align:left;font-size:14px;line-height:1.55;color:#334}
+.how b{color:var(--teal)}
+.go.pink{background:var(--pink);box-shadow:0 5px 0 #c73b69;color:#fff}.go.pink:active{box-shadow:0 2px 0 #c73b69}
+.off{display:none}
+.acct{display:flex;flex-wrap:wrap;align-items:center;gap:6px;justify-content:center;margin:8px 0 2px;font-size:14px}
+.ac-s{color:#556;font-weight:700}.ac-s b{color:#1d2433}
+.ac-b{border:0;border-radius:999px;background:#eef1f5;font:inherit;font-weight:800;font-size:14px;min-height:38px;padding:0 14px;color:#1d2433}
+.ac-b.g{background:#fff;box-shadow:0 0 0 2px #d6dbe3;padding:0 18px}.ac-m{width:100%;text-align:center;color:#e8443a;font-weight:700;font-size:13px}
+#lbv{z-index:5}#lbCard{width:min(520px,100%);text-align:left}
+#menu{background:linear-gradient(90deg,rgba(20,40,60,.25),transparent 55%);justify-content:flex-start;padding-left:max(4vw,16px)}
+.card.menu{width:min(350px,100%);background:rgba(255,255,255,.93);margin:auto 0}
+@media (max-aspect-ratio:1/1){#menu{justify-content:center;align-items:flex-end;padding:12px;background:linear-gradient(180deg,transparent 45%,rgba(20,40,60,.25))}.card.menu{margin:auto 0 0}}
+.card.menu .go{margin-top:10px}
+@media (max-height:520px) and (min-aspect-ratio:1/1){.ov.side .card{width:min(760px,74vw);column-count:2;column-gap:20px}.ov.side .card>*{break-inside:avoid}.ov.side .card h3{column-span:none}}
+@media (max-aspect-ratio:1/1){.cv h3{font-size:24px}.say{padding:8px 10px;margin:8px 0;font-size:14px}.act{min-height:54px;font-size:15px}.st{margin:4px 0}.lbl{margin:8px 0 3px}}
+.go.teal{background:var(--teal);box-shadow:0 5px 0 #157a70;color:#fff}.go.teal:active{box-shadow:0 2px 0 #157a70}
+.kpi{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:8px 0}
+.kpi div{background:#f4f8f7;border-radius:12px;padding:6px 10px}.kpi small{display:block;font-size:12px;color:#667;font-weight:700}.kpi b{font-size:17px;white-space:nowrap}
+.acts.two{grid-template-columns:repeat(2,minmax(0,1fr))}
+.tabs{display:flex;gap:4px;background:#eef1f5;border-radius:12px;padding:4px;margin:8px 0}
+.tabs button{flex:1;border:0;border-radius:9px;background:none;font:inherit;font-weight:800;min-height:40px;font-size:14px;color:var(--ink);white-space:nowrap}.tabs button.on{background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.prow{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px;align-items:center;width:100%;text-align:left;border:0;background:#f4f8f7;border-radius:12px;padding:8px 10px;margin:4px 0 0;font:inherit;font-weight:800;color:var(--ink);min-height:48px}
+.crow{display:flex;gap:8px;align-items:flex-start;margin:5px 0}.crow>b{flex:none;width:2.4em;font-size:13px;color:#556;padding-top:7px}.crow>.chips,.crow>input{flex:1}
+.chips.cs{gap:4px}.chips.cs .chip{min-height:34px;padding:3px 9px;font-size:13px}.chips.cs .sw{width:32px;height:32px}
+.no{font-style:normal;display:inline-block;min-width:1.7em;margin-right:4px;padding:0 4px;border-radius:6px;background:#1d2433;color:#fff;font-size:12px;text-align:center}
+input.nm.ns{min-height:40px;font-size:16px;padding:4px 10px}
+.rgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}.rgrid .prow{grid-template-columns:minmax(0,1fr) auto;margin:0;min-height:46px;padding:6px 8px}
+.prow.st1{box-shadow:inset 4px 0 0 #3d7bff}.prow.st2{box-shadow:inset 4px 0 0 #ff8a3d}
+.prow small{display:block;font-weight:600;color:#667;font-size:12px}.prow.on{outline:3px solid var(--teal)}.prow .tag{margin:0}
+.detail{background:#fbfcfd;border:1px solid #e3e6ea;border-radius:12px;padding:6px 10px 10px;margin:2px 0 6px}
+table.lg{width:100%;border-collapse:collapse;font-size:14px;margin:4px 0}table.lg td,table.lg th{padding:6px 4px;text-align:right}table.lg td:nth-child(2),table.lg th:nth-child(2){text-align:left}table.lg tr.us{background:#fff4cc;font-weight:800}table.lg th{color:#667;font-size:12px;border-bottom:1px solid #e3e6ea}
+#mgrbar{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom) + 12px);display:none;gap:6px;background:rgba(255,255,255,.92);padding:6px;border-radius:16px;box-shadow:0 4px 0 rgba(0,0,0,.15);max-width:calc(100vw - 16px);overflow-x:auto}
+#mgrbar button{border:0;border-radius:10px;background:#eef1f5;font:inherit;font-weight:800;min-height:42px;padding:0 12px;color:var(--ink);white-space:nowrap}
+#mgrbar button.on{background:var(--teal);color:#fff}#mgrbar #skipBtn{background:var(--sun)}
+#mgst{position:fixed;left:calc(env(safe-area-inset-left) + 8px);top:50%;transform:translateY(-50%);display:none;flex-direction:column;gap:4px;background:rgba(255,255,255,.88);border-radius:12px;padding:6px 8px;font-size:12px;font-weight:800;pointer-events:none;width:122px;color:var(--ink)}
+#mgst div{display:grid;grid-template-columns:22px minmax(0,1fr);align-items:center;column-gap:6px;row-gap:2px}
+#mgst em{font-style:normal;background:#1d2433;color:#fff;border-radius:5px;text-align:center;font-size:11px;grid-row:span 2;line-height:18px}
+#mgst span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.1}#mgst i{display:block;height:5px;border-radius:3px}
+@media (max-aspect-ratio:1/1){#mgst{top:auto;bottom:calc(env(safe-area-inset-bottom) + 70px);transform:none;width:112px}}
+.rk.mini{display:inline-grid;width:22px;height:22px;font-size:13px;border-radius:6px;vertical-align:middle}.inj{color:#fff;background:#e8443a;border-radius:5px;padding:0 4px;font-size:11px}
+body.mg #mgrbar,body.mg #mgst{display:flex}body.mg :is(#pad,#keys,#menuBtn,#cue){display:none!important}
+.go small{display:block;font-size:14px;font-weight:600;line-height:1.2;margin-top:-2px;opacity:.92}
+details.how summary{font-weight:800;cursor:pointer;min-height:32px}
+.ov.side{flex-direction:column;align-items:flex-end;justify-content:flex-start;background:linear-gradient(90deg,transparent 35%,rgba(20,40,60,.3))}
+.ov.side .card{margin:auto 0;text-align:left;width:min(440px,100%)}
+body:not([data-m=game]) :is(#hud,#touch,#menuBtn,#keys,#pad,#cue,#banner){display:none!important}
+@media (max-aspect-ratio:1/1){.ov.side{align-items:stretch;padding:8px;padding-top:23vh;background:none}.ov.side .card{margin:auto 0 0;width:100%}}
+.cv h3{margin:0;font-size:28px;line-height:1.1}
+.hdr{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.tag{display:inline-block;background:var(--teal);color:#fff;border-radius:999px;padding:0 10px;font-size:13px;font-weight:800;margin:2px 4px 2px 0;white-space:nowrap}
+.st{display:grid;grid-template-columns:2.6em 28px minmax(0,1fr) 2em auto;align-items:center;gap:8px;margin:6px 0;font-weight:800}
+.rk{width:28px;height:28px;border-radius:8px;color:#fff;display:grid;place-items:center;font-size:17px}
+.bar{height:12px;border-radius:999px;background:#eef1f5;overflow:hidden}.bar i{display:block;height:100%;border-radius:999px;transition:width .3s}
+.st .v{text-align:right}.pm{display:flex;gap:4px}
+.sm{width:40px;height:40px;border-radius:10px;border:0;background:#eef1f5;font:inherit;font-weight:800;font-size:20px;color:var(--ink)}
+.say{background:#fff4cc;border-radius:14px;padding:10px 12px;margin:10px 0;font-size:15px;line-height:1.5}.say i{font-style:normal;font-weight:800;color:var(--coral);margin-right:6px}
+.say.plain{background:#eef6ff}
+.meta{margin:6px 0;font-size:15px}.note{font-size:13px;color:#556;margin:6px 0}.err{color:#e8443a;font-weight:800;margin:4px 0;min-height:1em}
+.acts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:8px}
+.act{border:0;border-radius:14px;min-height:62px;font:inherit;font-weight:800;font-size:16px;color:#fff;box-shadow:0 4px 0 rgba(0,0,0,.18);line-height:1.15;padding:6px}
+.act small{display:block;font-size:12px;font-weight:600;opacity:.92;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.act:disabled{opacity:.4}.act.wide{grid-column:1/-1}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:0;border-radius:999px;padding:6px 12px;background:#eef1f5;font:inherit;font-weight:800;font-size:14px;min-height:40px;color:var(--ink)}
+.chip.on{background:var(--teal);color:#fff}
+.sw{width:40px;height:40px;border-radius:50%;border:3px solid #fff;box-shadow:0 0 0 2px #ccd}.sw.on{box-shadow:0 0 0 3px var(--ink)}
+input.nm{width:100%;font:inherit;font-size:18px;font-weight:800;padding:6px 12px;border-radius:12px;border:2px solid #ccd;min-height:46px;color:var(--ink);background:#fff}
+input.nm:focus{outline:3px solid var(--blue);outline-offset:1px}
+.lbl{font-weight:800;margin:10px 0 4px;font-size:14px;color:#556}
+.foot{display:flex;justify-content:space-between;gap:8px;margin-top:10px;flex-wrap:wrap}
+.lnk{border:0;background:none;font:inherit;font-weight:800;color:#667;min-height:40px;padding:0 6px}
+.shop{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 10px;align-items:center;margin:6px 0;padding:8px 10px;background:#f4f8f7;border-radius:12px}
+.shop small{display:block;color:#667;font-weight:600;font-size:13px}
+.buy{border:0;border-radius:10px;background:var(--sun);font:inherit;font-weight:800;min-height:40px;padding:0 12px;white-space:nowrap;color:var(--ink)}
+.buy:disabled{opacity:.4}
+button:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+</style>
+</head>
+<body>
+<div id="stage"></div>
+<div id="lines"></div><div id="flash"></div>
+<div id="hud">
+  <div class="score"><span class="srv" id="sv0"></span><span class="tm a" id="tmA">你方</span><b id="s0">0</b><i>:</i><b id="s1">0</b><span class="tm b" id="tmB">對手</span><span class="srv" id="sv1"></span></div>
+</div>
+<div id="touch"><i></i><i></i><i></i></div>
+<button id="menuBtn">選單</button>
+<div id="banner"><div id="msg"></div></div><div id="pop"></div>
+<div id="cue"></div>
+<div id="pad"><button id="bJump">跳</button><button id="bPass">傳</button><button id="bTip">吊</button><button id="bAtk">攻</button></div>
+<div id="joy"><div id="knob"></div></div>
+<div id="keys">WASD 移動（擊球時按住＝方向攻擊）· 滑鼠 瞄準 · 空白鍵 跳 · J／右鍵 傳 · K／左鍵 攻 · L 吊</div>
+
+<div id="menu" class="ov">
+  <div class="card menu">
+    <h1>BUMP!</h1>
+    <p class="sub">晨光高中校際盃 · 3D Q 版排球</p>
+    <div id="acct" class="acct"></div>
+    <div id="mainPanel">
+      <button class="go pink" id="careerBtn">生涯模式<small>建立角色，從街頭打進全國大賽</small></button>
+      <button class="go teal" id="mgrBtn">經理人模式<small>經營俱樂部，從區域聯賽打進世界盃</small></button>
+      <button class="go" id="entBtn">娛樂模式<small>自由對戰，1～6 人制</small></button>
+    </div>
+    <div id="entPanel" class="off">
+      <div class="row"><label>人數</label><div class="seg" data-k="mode"><button data-v="1">1人</button><button data-v="2">2人</button><button data-v="3">3人</button><button data-v="4">4人</button><button data-v="5">5人</button><button data-v="6" class="on">6人</button></div></div>
+      <div class="row"><label>難度</label><div class="seg" data-k="diff"><button data-v="easy">簡單</button><button data-v="normal">普通</button><button data-v="hard" class="on">困難</button><button data-v="pro">職業</button></div></div>
+      <div class="row"><label>分數</label><div class="seg" data-k="to"><button data-v="11">11 分</button><button data-v="15">15 分</button><button data-v="25" class="on">正規 25</button></div></div>
+      <button class="go" id="startBtn">開球！</button>
+      <details class="how"><summary>操作說明</summary>
+        <b>移動</b>：左下拖曳搖桿（電腦：WASD）<br>
+        <b>瞄準</b>：點／拖對面場地，黃圈＝落點（電腦：滑鼠）<br>
+        <b>方向攻擊</b>：擊球瞬間按住搖桿方向，就往那個方向打，圈會變橘色<br>
+        <b>攻</b>：空中且球高過網＝扣殺，否則推送過網；靠近高球按「攻」會自動起跳<br>
+        <b>吊</b>：輕吊過網　<b>傳</b>：一傳給舉球員，二傳舉給攻擊手<br>
+        <b>跳</b>：起跳方向跟著助跑方向，空中不能轉向；網前起跳可攔網<br>
+        球要過網到自己這邊才能擊球，每邊最多三觸（攔網不算）。建議手機橫放。
+      </details>
+      <div class="foot"><button class="lnk" id="entBack">← 返回</button></div>
+    </div>
+  </div>
+</div>
+<div id="cv" class="ov side hide"><div class="card cv" id="cvCard"></div></div>
+<div id="mv" class="ov side hide"><div class="card cv" id="mvCard"></div></div>
+<div id="lbv" class="ov hide"><div class="card cv" id="lbCard"></div></div>
+<div id="mgst"></div>
+<div id="mgrbar"><button data-s="1" class="on">×1</button><button data-s="2">×2</button><button data-s="4">×4</button><button id="tacBtn">戰術：均衡</button><button id="skipBtn">略過</button></div>
+<div id="over" class="ov hide">
+  <div class="card">
+    <h2 id="ovT">勝利！</h2>
+    <p class="sub" id="ovS"></p>
+    <button class="go" id="againBtn">再來一局</button>
+    <button class="go alt" id="toMenu">回到選單</button>
+  </div>
+</div>
+
+<script src="firebase-config.js" onerror="window.FIREBASE_CONFIG=null"></script>
+<script type="module">
+const V='12.7.0',C=window.FIREBASE_CONFIG,fire=u=>dispatchEvent(new CustomEvent('fbauth',{detail:u}));
+if(!C||!C.apiKey){window.FB={ready:false,offline:true};fire(null)}
+else try{
+ const[{initializeApp},A,F]=await Promise.all([import(`https://www.gstatic.com/firebasejs/${V}/firebase-app.js`),import(`https://www.gstatic.com/firebasejs/${V}/firebase-auth.js`),import(`https://www.gstatic.com/firebasejs/${V}/firebase-firestore.js`)]);
+ const app=initializeApp(C),auth=A.getAuth(app),db=F.getFirestore(app),me=()=>F.doc(db,'users',auth.currentUser.uid);
+ window.FB={ready:true,
+  signIn:async()=>{const p=new A.GoogleAuthProvider();try{await A.signInWithPopup(auth,p)}catch(e){if(['auth/popup-blocked','auth/operation-not-supported-in-this-environment','auth/cancelled-popup-request'].includes(e.code))await A.signInWithRedirect(auth,p);else throw e}},
+  signOut:()=>A.signOut(auth),
+  get:async k=>{const s=await F.getDoc(me());return s.exists()?(s.data()[k]||null):null},
+  put:(k,v)=>F.setDoc(me(),{[k]:v,updatedAt:F.serverTimestamp()},{merge:true}),
+  submit:d=>F.setDoc(F.doc(db,'leaderboard',auth.currentUser.uid),{name:d.name,career:d.career,mgr:d.mgr,updatedAt:F.serverTimestamp()}),
+  board:async()=>(await F.getDocs(F.query(F.collection(db,'leaderboard'),F.orderBy('updatedAt','desc'),F.limit(100)))).docs.map(x=>({id:x.id,...x.data()}))};
+ A.getRedirectResult(auth).catch(()=>{});
+ A.onAuthStateChanged(auth,u=>fire(u));
+}catch(e){console.warn('Firebase 載入失敗',e);window.FB={ready:false,error:String(e)};fire(null)}
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+{
+const $=s=>document.querySelector(s),R=Math.random,V=THREE.Vector3;
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const K=1.3,G=12,GP=22,NET=2.43,CL=9*K,CW=4.5*K,BR=0.22,REACH=1.25,HREACH=1.45,JV=7.4,HSPD=8.4;
+const XM=CL+2,ZM=CW+1.5;
+// spd: run speed, noise: aim spread, skill: error multiplier, react: think interval, pick: target candidates, block: block chance, tip: tip chance, sf: serve fault, sv: serve apex
+const DIFF={
+ easy:{spd:5.7,noise:1.6,skill:1.35,react:.25,pick:1,block:0,tip:.05,sf:.12,sv:4.3,dig:.25},
+ normal:{spd:7.1,noise:.9,skill:1,react:.12,pick:3,block:.45,tip:.12,sf:.08,sv:3.9,dig:.35},
+ hard:{spd:8,noise:.55,skill:.75,react:.06,pick:5,block:.75,tip:.18,sf:.06,sv:3.5,dig:.42},
+ pro:{spd:8.8,noise:.35,skill:.55,react:.03,pick:8,block:.92,tip:.22,sf:.05,sv:3.2,dig:.5}};
+const TEAM={spd:7.6,noise:.85,skill:.9,react:.08,pick:3,block:.5,tip:.1,sf:.06,sv:3.8,dig:.4};
+// rotation slots in order [pos1(server, right-back), pos6, pos5, pos4, pos3, pos2]: [depth from net, offset to the team's right]
+// winning the serve back moves every player one slot on (pos2 -> pos1 serves, pos1 -> pos6 ...)
+const ROT={1:[[5.5,0]],2:[[5.2,2.1],[5.2,-2.1]],3:[[5.8,2.4],[5.8,-2.4],[2.6,0]],
+ 4:[[6.5,2.4],[6.5,-2.4],[3,-2.4],[3,2.4]],5:[[6.8,2.6],[6.8,-2.6],[3,-3],[2.6,0],[2.6,3]],
+ 6:[[6.8,2.8],[7.4,0],[6.8,-2.8],[3.2,-3.1],[2.8,0],[2.5,2.9]]};
+const cfg={mode:6,diff:'hard',to:25};
+const COARSE=matchMedia('(pointer:coarse)').matches;if(COARSE)document.body.classList.add('coarse');
+
+/* ---------- renderer & helpers ---------- */
+const renderer=new THREE.WebGLRenderer({antialias:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,COARSE?1.6:2));
+renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+$('#stage').appendChild(renderer.domElement);
+const cv=renderer.domElement;
+const scene=new THREE.Scene();
+const MC={},GC={};
+const M=c=>MC[c]||(MC[c]=new THREE.MeshLambertMaterial({color:c}));
+const geo=(k,f)=>GC[k]||(GC[k]=f());
+const Sph=(r,a=16,b=12)=>geo('s'+r+'_'+a+'_'+b,()=>new THREE.SphereGeometry(r,a,b));
+const Cyl=(a,b,h,s=10)=>geo('c'+a+'_'+b+'_'+h+'_'+s,()=>new THREE.CylinderGeometry(a,b,h,s));
+const Box=(x,y,z)=>geo('b'+x+'_'+y+'_'+z,()=>new THREE.BoxGeometry(x,y,z));
+function tex(w,h,draw){const c=document.createElement('canvas');c.width=w;c.height=h;draw(c.getContext('2d'),w,h);const t=new THREE.CanvasTexture(c);t.anisotropy=4;return t}
+const TM=t=>new THREE.MeshLambertMaterial({map:t});
+function mesh(g,m,x,y,z,shadow=true){const o=new THREE.Mesh(g,m);o.position.set(x,y,z);o.castShadow=shadow;o.receiveShadow=true;scene.add(o);return o}
+function flat(w,h,mat,y){const m=new THREE.Mesh(new THREE.PlaneGeometry(w,h),mat);m.rotation.x=-Math.PI/2;m.position.y=y;m.receiveShadow=true;scene.add(m);return m}
+const FONT='800 1px "Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif';
+const font=px=>FONT.replace('1px',px+'px');
+
+/* ---------- sky & light ---------- */
+scene.background=tex(4,256,(g,w,h)=>{const gr=g.createLinearGradient(0,0,0,h);gr.addColorStop(0,'#5fb6f0');gr.addColorStop(.6,'#a9dcf8');gr.addColorStop(1,'#e8f6ff');g.fillStyle=gr;g.fillRect(0,0,w,h)});
+scene.fog=new THREE.Fog(0xd8eefc,70,170);
+const cam=new THREE.PerspectiveCamera(50,1,.1,300);
+scene.add(new THREE.HemisphereLight(0xffffff,0xd8c8a8,.78));
+const sun=new THREE.DirectionalLight(0xfff0d6,.85);sun.position.set(-12,28,16);sun.castShadow=true;
+sun.shadow.mapSize.set(COARSE?1024:2048,COARSE?1024:2048);Object.assign(sun.shadow.camera,{left:-24,right:24,top:20,bottom:-20,near:1,far:80});
+scene.add(sun);
+
+/* ---------- school court ---------- */
+flat(320,320,M(0xd3cdbf),0);
+flat(2*CL+9,2*CW+8,M(0x2f9a6c),.01);
+const PX=50;
+flat(2*CL+1,2*CW+1,TM(tex((2*CL+1)*PX|0,(2*CW+1)*PX|0,(g,w,h)=>{
+ g.fillStyle='#d8573f';g.fillRect(0,0,w,h);const m=PX/2;g.fillStyle='#e8644a';g.fillRect(m,m,w-2*m,h-2*m);
+ g.globalAlpha=.06;for(let i=0;i<500;i++){g.fillStyle=i%2?'#000':'#fff';g.fillRect(R()*w,R()*h,2,2)}g.globalAlpha=1;
+ g.strokeStyle='#fff';g.lineWidth=7;g.strokeRect(m,m,w-2*m,h-2*m);const cx=w/2,a=3*K*PX;
+ g.beginPath();g.moveTo(cx,m);g.lineTo(cx,h-m);g.moveTo(cx-a,m);g.lineTo(cx-a,h-m);g.moveTo(cx+a,m);g.lineTo(cx+a,h-m);g.stroke();
+ g.globalAlpha=.18;g.fillStyle='#fff';g.font=font(70);g.textAlign='center';g.textBaseline='middle';
+ g.save();g.translate(cx-w/4,h/2);g.rotate(Math.PI/2);g.fillText('晨光高中',0,0);g.restore();
+ g.save();g.translate(cx+w/4,h/2);g.rotate(-Math.PI/2);g.fillText('晨光高中',0,0);g.restore()})),.02);
+// net
+const NW=2*CW+1.4;
+const netTex=tex(32,32,g=>{g.strokeStyle='#fff';g.lineWidth=3;g.strokeRect(0,0,32,32)});
+netTex.wrapS=netTex.wrapT=THREE.RepeatWrapping;netTex.repeat.set(NW*5,5);
+const net=new THREE.Mesh(new THREE.PlaneGeometry(NW,1),new THREE.MeshLambertMaterial({map:netTex,transparent:true,alphaTest:.4,side:THREE.DoubleSide,color:0x333344}));
+net.rotation.y=Math.PI/2;net.position.set(0,NET-.5,0);scene.add(net);
+mesh(new THREE.BoxGeometry(.06,.09,NW),M(0xffffff),0,NET,0);
+for(const z of[-NW/2,NW/2]){mesh(Cyl(.09,.09,2.7),M(0x2f5aa8),0,1.35,z);mesh(Cyl(.3,.3,.1,12),M(0x2f5aa8),0,.05,z)}
+for(const z of[-CW,CW])mesh(Cyl(.025,.025,.9,6),M(0xff4466),0,NET+.4,z,false);
+// referee stand
+mesh(Box(.8,1.6,.8),M(0x2f5aa8),0,.8,-NW/2-.9);mesh(Sph(.3),M(0xffd9bd),0,1.9,-NW/2-.9);mesh(Cyl(.25,.3,.5),M(0x222222),0,1.5,-NW/2-.9);
+
+// banner boards around the apron
+const BOARDS=[['晨光高中','#c8372d','#fff'],['排球隊 加油！','#1f5fbf','#fff'],['BUMP! 校際盃','#ffd23f','#1d2433'],['團結 · 拚搏','#1f9e92','#fff'],['全力以赴','#ff5d8f','#fff']];
+const boardTex=BOARDS.map(([t,bg,fg])=>tex(512,96,(g,w,h)=>{g.fillStyle=bg;g.fillRect(0,0,w,h);g.fillStyle=fg;g.font=font(58);g.textAlign='center';g.textBaseline='middle';g.fillText(t,w/2,h/2+4)}));
+let bi=0;
+for(const sz of[-1,1])for(let x=-CL;x<CL;x+=5.2){const b=mesh(new THREE.BoxGeometry(5,1,.12),TM(boardTex[bi++%5]),x+2.6,.5,sz*(CW+4.1));if(sz<0)b.rotation.y=Math.PI}
+for(const sx of[-1,1])for(let z=-CW-2;z<CW+2;z+=5.2){const b=mesh(new THREE.BoxGeometry(5,1,.12),TM(boardTex[bi++%5]),sx*(CL+4.6),.5,z+2.6);b.rotation.y=sx>0?Math.PI/2:-Math.PI/2}
+
+// school building
+const wallTex=tex(2048,384,(g,w,h)=>{
+ g.fillStyle='#f3e6c6';g.fillRect(0,0,w,h);const fl=h/4.4;
+ g.fillStyle='#b8563e';g.fillRect(0,0,w,14);
+ for(let f=0;f<4;f++){const y0=h-(f+1)*fl;
+  g.fillStyle='#b8563e';g.fillRect(0,y0+fl-8,w,8);
+  for(let i=0;i<32;i++){const x=i*w/32+10,ww=w/32-20;
+   if(f===0&&i>=14&&i<=17)continue;
+   g.fillStyle='#e9dcc0';g.fillRect(x-3,y0+16,ww+6,fl-34);
+   g.fillStyle='#7fb7d8';g.fillRect(x,y0+19,ww,fl-40);
+   g.fillStyle='rgba(255,255,255,.35)';g.beginPath();g.moveTo(x,y0+19);g.lineTo(x+ww*.5,y0+19);g.lineTo(x,y0+19+(fl-40)*.6);g.fill();
+   g.fillStyle='#fff';g.fillRect(x+ww/2-1,y0+19,2,fl-40);
+   if(f>0&&R()<.28){const hx=x+ww*(.25+R()*.5);g.fillStyle=['#3a2a20','#1d1d2b','#6b4a2f'][i%3];g.beginPath();g.arc(hx,y0+fl-26,9,0,7);g.fill();g.fillStyle='#ffd9bd';g.beginPath();g.arc(hx,y0+fl-23,7,0,7);g.fill()}}
+  if(f>0){g.fillStyle='#fff';g.fillRect(0,y0+fl-24,w,4);for(let x=0;x<w;x+=12)g.fillRect(x,y0+fl-24,2,16)}}
+ g.fillStyle='#5a4a3a';g.fillRect(w/2-120,h-fl+16,240,fl-16);
+ g.fillStyle='#c8372d';g.fillRect(w/2-230,h-fl-62,460,50);g.fillStyle='#ffd23f';g.font=font(36);g.textAlign='center';g.textBaseline='middle';g.fillText('晨 光 高 級 中 學',w/2,h-fl-36);
+ for(const bx of[w/2-420,w/2+360]){g.fillStyle='#c8372d';g.fillRect(bx,16,60,h-fl-30);g.fillStyle='#fff';g.font=font(34);['排','球','隊','加','油'].forEach((c,k)=>g.fillText(c,bx+30,56+k*44))}});
+function school(x,rot){const cream=M(0xf3e6c6);
+ const b=mesh(new THREE.BoxGeometry(8,15,90),[cream,TM(wallTex),M(0x9c4a38),cream,cream,cream],x,7.5,0);b.rotation.y=rot;
+ const clockTex=tex(256,256,g=>{g.fillStyle='#f3e6c6';g.fillRect(0,0,256,256);g.fillStyle='#fff';g.strokeStyle='#5a4a3a';g.lineWidth=10;g.beginPath();g.arc(128,128,96,0,7);g.fill();g.stroke();
+  g.lineWidth=8;g.lineCap='round';g.beginPath();g.moveTo(128,128);g.lineTo(128,60);g.moveTo(128,128);g.lineTo(178,148);g.stroke();
+  for(let k=0;k<12;k++){const a=k/12*Math.PI*2;g.fillStyle='#5a4a3a';g.fillRect(128+Math.cos(a)*80-4,128+Math.sin(a)*80-4,8,8)}});
+ const t=mesh(new THREE.BoxGeometry(6,6,9),[cream,TM(clockTex),cream,cream,cream,cream],x,18,0);t.rotation.y=rot;
+ const r=mesh(new THREE.ConeGeometry(6.6,3.2,4),M(0xb8563e),x,22.6,0);r.rotation.y=Math.PI/4}
+school(CL+26,0);school(-CL-28,Math.PI);
+// gym on the left
+mesh(new THREE.BoxGeometry(30,9,14),M(0xe9eef2),4,4.5,-CW-27);
+mesh(new THREE.CylinderGeometry(7.4,7.4,30,24,1,false,0,Math.PI),M(0x4a7fc1),4,9,-CW-27).rotation.z=Math.PI/2;
+// trees
+function tree(x,z,s){const g=new THREE.Group();const tr=new THREE.Mesh(Cyl(.25,.38,3.2,8),M(0x8a5a35));tr.position.y=1.6;g.add(tr);
+ const cs=[0x4fae5a,0x3f9a4c,0x5cbb62];for(let k=0;k<4;k++){const c=new THREE.Mesh(Sph(1.5+R()*.7,12,10),M(cs[k%3]));c.position.set((R()-.5)*1.8,3.8+R()*1.4,(R()-.5)*1.8);g.add(c)}
+ g.position.set(x,0,z);g.scale.setScalar(s);g.traverse(m=>m.castShadow=true);scene.add(g)}
+for(let k=0;k<9;k++)tree(CL+16+R()*3,-36+k*9+R()*3,1+R()*.3);
+for(let k=0;k<7;k++){tree(-CL-14+k*6+R()*2,CW+19+R()*3,.9+R()*.3)}
+tree(-CL-10,-CW-18,1.1);tree(CL+6,-CW-17,1.2);
+// clouds
+const clouds=[];
+for(let k=0;k<7;k++){const g=new THREE.Group();for(let j=0;j<4;j++){const c=new THREE.Mesh(Sph(3+R()*2,10,8),new THREE.MeshBasicMaterial({color:0xffffff,fog:false}));c.position.set(j*4,R()*1.5,R()*3);c.scale.y=.6;g.add(c)}
+ g.position.set(70+R()*40,30+R()*15,-70+k*22);scene.add(g);clouds.push(g)}
+const birds=[];for(let k=0;k<5;k++){const g=new THREE.Group(),bm=new THREE.MeshBasicMaterial({color:0x34404f,side:THREE.DoubleSide});
+ const wg=new THREE.PlaneGeometry(.9,.3);const wl=new THREE.Mesh(wg,bm),wr=new THREE.Mesh(wg,bm);wl.position.x=-.45;wr.position.x=.45;
+ const pl=new THREE.Group(),pr=new THREE.Group();pl.add(wl);pr.add(wr);g.add(pl,pr);g.rotation.x=-Math.PI/2;
+ const o=new THREE.Group();o.add(g);scene.add(o);birds.push({o,pl,pr,r:26+R()*14,h:16+R()*8,a:R()*6,sp:.12+R()*.08,ph:R()*6})}
+
+/* ---------- bleachers & cheering students ---------- */
+const capGeo=new THREE.SphereGeometry(.535,20,12,0,Math.PI*2,0,Math.PI*.56);
+const capGeoF=new THREE.SphereGeometry(.43,14,10,0,Math.PI*2,0,Math.PI*.56);
+const fans=[],hype=[0,0],flags=[];
+const SKIN=[0xffd9bd,0xf5c49c,0xe0a77d,0xc68660,0xffe3cf,0x8d5a3b],HAIR=[0x3a2a20,0x1d1d2b,0xffcf5a,0xb5532f,0x6b4a8f,0x8a5a35,0xff8fb1,0xd94f3d,0x2f6bd8,0x34a37a,0xc9c9d2,0xe07b39];
+const PANTS=[0x2f3550,0x1d1d24,0xf4f4f4,0x7b8494,0x3a4f7a],SHOE=[0xffffff,0x222222,0xe8443a,0x3d7bff,0xffd23f,0x8fdc4a],ACCC=[0xffffff,0xffd23f,0xff5d8f,0x22c3a6,0x222222];
+const FANSHIRT=[0xffffff,0xffffff,0xf4e3b5,0xbfe0ff,0xffd0e0,0xd8f5d0,0x2f3550];
+function makeFan(team){
+ const g=new THREE.Group(),rig=new THREE.Group();g.add(rig);
+ const shirt=M(R()<.45?FANSHIRT[R()*FANSHIRT.length|0]:(team?0xff7aa5:0x6a9bff)),skin=M(SKIN[R()*6|0]),hc=M(HAIR[R()*HAIR.length|0]);
+ const add=(gm,m,x,y,z,p=rig)=>{const o=new THREE.Mesh(gm,m);o.position.set(x,y,z);p.add(o);return o};
+ add(Cyl(.2,.24,.5,10),shirt,0,.25,0);
+ add(Cyl(.22,.24,.12,10),M(PANTS[R()*5|0]),0,.06,0);
+ const hd=new THREE.Group();hd.position.y=.92;rig.add(hd);
+ add(Sph(.4,14,10),skin,0,0,0,hd).scale.set(1,.93,1);
+ add(capGeoF,hc,-.02,.02,0,hd).rotation.z=.38;
+ const hs=R()*5|0;
+ if(hs===1)add(Sph(.14,8,6),hc,-.44,0,0,hd);
+ if(hs===2)for(const z of[-.27,.27])add(Sph(.13,8,6),hc,-.08,.34,z,hd);
+ if(hs===3)add(Sph(.34,10,8),hc,-.18,-.22,0,hd).scale.set(.8,1.3,1.15);
+ if(hs===4)add(Sph(.15,8,6),hc,-.04,.47,0,hd);
+ for(const z of[-.14,.14])add(Sph(.06,8,6),M(0x2b2b3a),.37,-.01,z,hd).scale.set(.6,1.3,.9);
+ if(R()<.4)add(new THREE.TorusGeometry(.4,.04,6,16),M(team?0xff5d8f:0x3d7bff),0,.12,0,hd).rotation.x=Math.PI/2;
+ if(R()<.15)add(Cyl(.44,.44,.06,14),M([0xffd23f,0xffffff,0x3d7bff][R()*3|0]),0,.3,0,hd);
+ const pom=R()<.55,pc=M(team?0xff5d8f:0x3d7bff);
+ const arm=z=>{const pv=new THREE.Group();pv.position.set(0,.45,z);rig.add(pv);add(Cyl(.055,.055,.22,6),shirt,0,-.11,0,pv);add(pom?Sph(.15,8,6):Sph(.075,8,6),pom?pc:skin,0,-.25,0,pv);return pv};
+ return{g,rig,hd,aL:arm(-.24),aR:arm(.24),team,ph:R()*6,sp:6+R()*4}}
+
+for(const sz of[-1,1]){
+ const t=sz<0?0:1,z0=sz*(CW+5.4);
+ for(let r=0;r<3;r++){const h=.45*(r+1),z=z0+sz*r*1.5;
+  mesh(new THREE.BoxGeometry(2*CL+2,h,1.5),M(r%2?0xc9c3b6:0xbdb6a8),0,h/2,z);
+  mesh(new THREE.BoxGeometry(2*CL+2,.06,.3),M(t?0xff7aa5:0x6a9bff),0,h+.03,z-sz*.55,false);
+  if(r<2)for(let k=0;k<10;k++){const f=makeFan(t);f.g.position.set(-CL+1+k*(2*CL-2)/9+(R()-.5)*.6,h,z);f.base=h;scene.add(f.g);fans.push(f)}}
+ // bunting
+ const pts=[];for(let k=0;k<=22;k++){const u=k/22,x=-CL-1+u*(2*CL+2);pts.push(new V(x,4.6-Math.sin(u*Math.PI)*.9,sz*(CW+4.4)))}
+ mesh(Cyl(.06,.06,4.8,6),M(0xffffff),-CL-1,2.4,sz*(CW+4.4));mesh(Cyl(.06,.06,4.8,6),M(0xffffff),CL+1,2.4,sz*(CW+4.4));
+ const fg=new THREE.BufferGeometry();fg.setAttribute('position',new THREE.Float32BufferAttribute([-.22,0,0,.22,0,0,0,-.5,0],3));
+ const fcol=[0xff5d8f,0xffd23f,0x3d7bff,0x22c3a6,0xff8a3d];
+ pts.forEach((p,k)=>{if(k%1===0){const f=new THREE.Mesh(fg,new THREE.MeshBasicMaterial({color:fcol[k%5],side:THREE.DoubleSide}));f.position.copy(p);f.userData.ph=k*.7;scene.add(f);flags.push(f)}})}
+
+/* ---------- markers & ball ---------- */
+function ring(r1,r2,c,o){const m=new THREE.Mesh(new THREE.RingGeometry(r1,r2,40),new THREE.MeshBasicMaterial({color:c,transparent:true,opacity:o,depthWrite:false}));m.rotation.x=-Math.PI/2;m.position.y=.04;scene.add(m);return m}
+const aimRing=ring(.38,.55,0xffd23f,.95),aimDot=ring(0,.12,0xffd23f,.95);
+const landRing=ring(.25,.36,0xffffff,.85),reachRing=ring(HREACH-.08,HREACH,0x7fe6ff,.6),meRing=ring(.42,.52,0x7fe6ff,.9);
+const meArrow=new THREE.Mesh(new THREE.ConeGeometry(.16,.3,4),new THREE.MeshBasicMaterial({color:0xffd23f}));meArrow.rotation.x=Math.PI;scene.add(meArrow);
+const tagCv=document.createElement('canvas');tagCv.width=256;tagCv.height=64;const tagTex=new THREE.CanvasTexture(tagCv);
+const nameTag=new THREE.Sprite(new THREE.SpriteMaterial({map:tagTex,depthTest:false,transparent:true}));nameTag.scale.set(1.6,.4,1);nameTag.visible=false;nameTag.renderOrder=9;scene.add(nameTag);
+function setTag(t){const g=tagCv.getContext('2d');g.clearRect(0,0,256,64);g.fillStyle='rgba(29,36,51,.85)';g.beginPath();if(g.roundRect)g.roundRect(8,6,240,52,26);else g.rect(8,6,240,52);g.fill();
+ g.fillStyle='#ffd23f';g.font=font(32);g.textAlign='center';g.textBaseline='middle';g.fillText(t,128,34);tagTex.needsUpdate=true}
+const ballMat=new THREE.MeshLambertMaterial({map:tex(256,128,(g,w,h)=>{const c=['#ffd23f','#2f6bff','#ffffff'];for(let i=0;i<6;i++){g.fillStyle=c[i%3];g.fillRect(0,i*h/6,w,h/6+1)}})});
+const ballMesh=new THREE.Mesh(new THREE.SphereGeometry(BR,24,18),ballMat);ballMesh.castShadow=true;scene.add(ballMesh);
+
+/* ---------- spike effects ---------- */
+const glowTex=tex(128,128,g=>{const gr=g.createRadialGradient(64,64,0,64,64,64);gr.addColorStop(0,'rgba(255,255,220,1)');gr.addColorStop(.3,'rgba(255,190,60,.8)');gr.addColorStop(1,'rgba(255,80,0,0)');g.fillStyle=gr;g.fillRect(0,0,128,128)});
+const ADD={blending:THREE.AdditiveBlending,transparent:true,depthWrite:false};
+const glow=new THREE.Sprite(new THREE.SpriteMaterial({map:glowTex,...ADD}));glow.scale.setScalar(1.6);glow.visible=false;scene.add(glow);
+const trail=[];for(let i=0;i<18;i++){const s=new THREE.Sprite(new THREE.SpriteMaterial({map:glowTex,...ADD,color:i<6?0xffffff:0xffa040}));s.visible=false;scene.add(s);trail.push(s)}
+const hist=[];
+const parts=[];for(let i=0;i<110;i++){const m=new THREE.Mesh(Sph(.07,6,4),new THREE.MeshBasicMaterial({color:0xffffff,transparent:true}));m.visible=false;scene.add(m);parts.push({m,v:new V(),life:0,max:1,g:9})}
+function burst(pos,n,cols,spd,up,grav=9,size=1){let c=0;for(const p of parts){if(c>=n)break;if(p.life>0)continue;c++;
+ const th=R()*Math.PI*2,ph=Math.acos(2*R()-1),s=spd*(.35+R()*.65);
+ p.v.set(Math.sin(ph)*Math.cos(th)*s,Math.cos(ph)*s*.6+up*(.5+R()),Math.sin(ph)*Math.sin(th)*s);
+ p.m.position.copy(pos);p.life=p.max=.45+R()*.45;p.g=grav;p.m.material.color.setHex(cols[R()*cols.length|0]);p.m.scale.setScalar(size*(.6+R()*.8));p.m.visible=true}}
+const shocks=[];for(let i=0;i<4;i++){const m=new THREE.Mesh(new THREE.RingGeometry(.55,.8,40),new THREE.MeshBasicMaterial({color:0xfff2b0,side:THREE.DoubleSide,...ADD}));m.visible=false;scene.add(m);shocks.push({m,t:0,flat:false,grow:6})}
+function shock(pos,flatRing,col,grow){const s=shocks.find(s=>s.t<=0)||shocks[0];s.t=.4;s.flat=flatRing;s.grow=grow;s.m.material.color.setHex(col);s.m.position.copy(pos);s.m.visible=true;if(flatRing){s.m.rotation.set(-Math.PI/2,0,0);s.m.position.y=.06}}
+const FX={stop:0,shake:0};
+const flashEl=$('#flash'),linesEl=$('#lines'),popEl=$('#pop');popEl.addEventListener('animationend',()=>popEl.classList.remove('go'));
+function domFlash(el,o,ms){el.style.transition='none';el.style.opacity=o;void el.offsetWidth;el.style.transition=`opacity ${ms}ms ease-out`;el.style.opacity=0}
+function popText(t,col){popEl.textContent=t;popEl.style.color=col;popEl.classList.remove('go');void popEl.offsetWidth;popEl.classList.add('go')}
+function spikeFX(pl){const p=ball.p.clone();
+ FX.stop=.08;FX.shake=Math.max(FX.shake,.45);
+ burst(p,34,[0xffffff,0xffe066,0xffa040,0xff5a2a],9,1.5);
+ shock(p,false,0xfff2b0,7);shock(p,false,pl.team?0xff8fb1:0x8fb8ff,4.5);
+ if(mode==='game'){domFlash(flashEl,.45,320);domFlash(linesEl,.85,450)}
+ if(mode==='game')popText(pl.human?'SPIKE!!':'SPIKE!',pl.team?'#ff8fb1':'#ffd23f');
+ hype[0]=Math.max(hype[0],.55);hype[1]=Math.max(hype[1],.55);boom(1)}
+function groundFX(){const p=new V(ball.p.x,.1,ball.p.z);
+ FX.shake=Math.max(FX.shake,.6);
+ burst(p,30,[0xf0e0c0,0xffffff,0xe8644a,0xffd23f],7,4,14,1.3);
+ shock(p,true,0xffffff,9);shock(p,true,0xffd23f,5);boom(.8)}
+
+/* ---------- chibi players ---------- */
+const spikeGeo=new THREE.ConeGeometry(.13,.34,6);
+const torusG=(r,t)=>geo('t'+r+'_'+t,()=>new THREE.TorusGeometry(r,t,8,24));
+function randLook(){return{style:R()*12|0,hair:R()*12|0,skin:R()*6|0,eye:R()*3|0,brow:R()*3|0,mouth:R()*3|0,acc:R()<.45?0:1+(R()*4|0),ac:R()*5|0,pants:R()*3|0,pc:R()*5|0,shirt:R()*3|0,trim:R()*3|0,shoe:R()*6|0,h:+(.94+R()*.12).toFixed(2)}}
+function makePlayer(shirtC,L0,num){
+ const L={style:0,hair:0,skin:0,eye:0,brow:0,mouth:0,acc:0,ac:0,pants:0,pc:0,shirt:0,trim:0,shoe:0,h:1,...L0};
+ const g=new THREE.Group(),rig=new THREE.Group();g.add(rig);g.scale.setScalar(L.h||1);
+ const shirt=M(shirtC),skin=M(SKIN[L.skin%SKIN.length]),dark=M(0x2b2b3a),pants=M(PANTS[L.pc%5]),shoe=M(SHOE[L.shoe%6]),hair=M(HAIR[L.hair%HAIR.length]),white=M(0xfffffe),blush=M(0xff9aa8),acc=M(ACCC[L.ac%5]);
+ const add=(gm,mat,x,y,z,par=rig)=>{const m=new THREE.Mesh(gm,mat);m.position.set(x,y,z);m.castShadow=true;par.add(m);return m};
+ for(const z of[-.11,.11]){
+  add(Cyl(.075,.085,.24,8),L.pants===2?pants:skin,0,.2,z);
+  if(L.pants===1)add(Cyl(.095,.095,.13,8),pants,0,.27,z);
+  if(L.acc===4)add(Cyl(.095,.095,.07,8),acc,0,.17,z);
+  add(Sph(.11,10,8),shoe,.04,.07,z).scale.set(1.45,.7,1.05)}
+ add(Cyl(.24,.27,.16,14),pants,0,.37,0);
+ const numTex=tex(128,64,(c,w,h)=>{c.fillStyle='#'+shirtC.toString(16).padStart(6,'0');c.fillRect(0,0,w,h);c.fillStyle='#fff';c.font='800 44px sans-serif';c.textAlign='center';c.textBaseline='middle';c.fillText(num,w/2,h/2+2)});
+ const body=add(new THREE.CylinderGeometry(.21,.25,.34,14),[new THREE.MeshLambertMaterial({map:numTex}),shirt,shirt],0,.6,0);body.rotation.y=Math.PI/2;
+ add(Sph(.215,14,10),shirt,0,.77,0).scale.set(1,.5,1);
+ if(L.trim===1)add(Cyl(.255,.255,.04,14),white,0,.46,0);
+ if(L.trim===2)add(Cyl(.12,.15,.05,12),white,0,.86,0);
+ const hd=new THREE.Group();hd.position.y=1.24;rig.add(hd);
+ add(Sph(.5,24,18),skin,0,0,0,hd).scale.set(1,.93,1);
+ const eyes=[];
+ for(const z of[-.18,.18]){const big=L.eye===2,e=add(Sph(big?.088:.075,12,10),dark,.455,-.01,z,hd);e.scale.set(.6,L.eye===1?.55:1.3,.9);e.userData.sy=e.scale.y;eyes.push(e);
+  if(L.eye!==1){add(Sph(.026,8,6),white,.5,.035,z+.02,hd);if(big)add(Sph(.014,6,4),white,.5,-.04,z-.02,hd)}
+  const bw=add(Box(.02,.03,.13),hair,.465,.15,z,hd);bw.rotation.x=(L.brow===1?.35:L.brow===2?-.35:0)*(z<0?1:-1);
+  add(Sph(.07,10,8),blush,.385,-.13,z*1.65,hd).scale.set(.3,.55,1)}
+ if(L.mouth===1)add(Sph(.045,10,8),dark,.47,-.16,0,hd).scale.set(.35,.22,2.1);
+ else if(L.mouth===2)add(Sph(.05,10,8),M(0xc0394f),.47,-.17,0,hd).scale.set(.4,.75,.95);
+ else add(Sph(.045,10,8),dark,.47,-.16,0,hd).scale.set(.4,.45,1.2);
+ const st=L.style;
+ if(st===7){add(Sph(.62,16,12),hair,-.1,.16,0,hd);for(let k=0;k<6;k++){const a=k/6*Math.PI*2;add(Sph(.2,8,6),hair,-.1+Math.cos(a)*.45,.12,Math.sin(a)*.5,hd)}}
+ else{const cap=add(capGeo,hair,0,.02,0,hd);cap.rotation.z=.38;if(st===8)cap.scale.setScalar(.965)}
+ if(st!==7&&st!==8){if(st===10){add(Sph(.17,10,8),hair,.33,.28,-.18,hd);add(Sph(.15,10,8),hair,.34,.25,.02,hd)}else for(const z of[-.2,0,.2])add(Sph(.14,10,8),hair,.33,.3,z,hd)}
+ if(st===1){add(Sph(.17,12,10),hair,-.55,.05,0,hd);add(Sph(.12,10,8),hair,-.64,-.22,0,hd)}
+ if(st===2)for(const z of[-.33,.33])add(Sph(.16,12,10),hair,-.1,.42,z,hd);
+ if(st===3)for(let k=0;k<6;k++){const a=k/6*Math.PI*2,c=add(spikeGeo,hair,Math.cos(a)*.26-.08,.46,Math.sin(a)*.26,hd);c.rotation.set(Math.sin(a)*.7,0,-Math.cos(a)*.7)}
+ if(st===4)for(const z of[-.42,.42])add(Sph(.24,12,10),hair,-.12,-.08,z,hd).scale.set(1,1.2,.7);
+ if(st===5)add(Sph(.42,14,10),hair,-.22,-.28,0,hd).scale.set(.8,1.35,1.2);
+ if(st===6)for(let k=0;k<5;k++){const c=add(spikeGeo,hair,.28-k*.16,.5-Math.abs(k-2)*.03,0,hd);c.rotation.z=-.5+k*.25}
+ if(st===9)for(const z of[-.5,.5])add(Sph(.15,10,8),hair,-.15,-.22,z,hd).scale.set(.7,1.7,.7);
+ if(st===11)add(Sph(.18,12,10),hair,-.05,.58,0,hd);
+ if(L.acc===1){const hb=add(torusG(.5,.045),acc,-.02,.2,0,hd);hb.rotation.set(Math.PI/2,0,.3)}
+ if(L.acc===2){for(const z of[-.18,.18])add(torusG(.085,.016),dark,.5,-.01,z,hd).rotation.y=Math.PI/2;add(Box(.02,.02,.1),dark,.52,0,0,hd)}
+ const arm=z=>{const pv=new THREE.Group();pv.position.set(0,.72,z);rig.add(pv);
+  add(Cyl(.065,.065,.24,8),L.shirt===2?shirt:skin,0,-.12,0,pv);
+  if(L.shirt===0)add(Cyl(.08,.075,.1,8),shirt,0,-.04,0,pv);
+  if(L.acc===3)add(Cyl(.075,.075,.06,8),acc,0,-.21,0,pv);
+  add(Sph(.09,10,8),skin,0,-.27,0,pv);return pv};
+ return{g,rig,hd,eyes,aL:arm(-.29),aR:arm(.29)}}
+
+
+/* ---------- audio ---------- */
+let ac=null,noiseBuf=null;
+function sfx(k){if(!ac||MUTE)return;try{const t=ac.currentTime,o=ac.createOscillator(),g=ac.createGain();
+ const f={pass:520,set:660,over:440,spike:170,tip:760,serve:400,block:260,net:140,point:880,lose:220}[k]||400;
+ o.type=k==='spike'||k==='block'?'square':'triangle';o.frequency.setValueAtTime(f,t);o.frequency.exponentialRampToValueAtTime(k==='point'?f*1.5:f*.5,t+.18);
+ g.gain.setValueAtTime(.22,t);g.gain.exponentialRampToValueAtTime(.001,t+.25);o.connect(g).connect(ac.destination);o.start(t);o.stop(t+.26)}catch(e){}}
+function noise(dur,freq,q,vol,attack){if(!ac||!noiseBuf||MUTE)return;try{const t=ac.currentTime,s=ac.createBufferSource(),f=ac.createBiquadFilter(),g=ac.createGain();
+ s.buffer=noiseBuf;f.type='bandpass';f.frequency.value=freq;f.Q.value=q;g.gain.setValueAtTime(.0001,t);g.gain.linearRampToValueAtTime(vol,t+attack);g.gain.exponentialRampToValueAtTime(.001,t+dur);
+ s.connect(f).connect(g).connect(ac.destination);s.start(t);s.stop(t+dur+.05)}catch(e){}}
+function boom(v){noise(.35,120,.7,.9*v,.005);if(!ac||MUTE)return;try{const t=ac.currentTime,o=ac.createOscillator(),g=ac.createGain();o.frequency.setValueAtTime(110,t);o.frequency.exponentialRampToValueAtTime(35,t+.3);g.gain.setValueAtTime(.5*v,t);g.gain.exponentialRampToValueAtTime(.001,t+.35);o.connect(g).connect(ac.destination);o.start(t);o.stop(t+.4)}catch(e){}}
+const cheer=v=>noise(1.4,1100,.6,.35*v,.15);
+
+/* ---------- game state ---------- */
+let players=[],H=null,S={},mode='menu',DES=[null,null],ROLE=['pass','pass'];
+const ball={p:new V(0,1,0),v:new V(),held:null,fx:0},aim=new V(5*K,0,0),IN={x:0,z:0};
+const side=t=>t?1:-1;
+const team=t=>players.filter(p=>p.team===t);
+const mate=pl=>team(pl.team).find(m=>m!==pl);
+const P=pl=>pl.ai||(pl.team===0?TEAM:DIFF[cfg.diff]);
+const depth=pl=>ROT[cfg.mode][pl.slot][0];
+function base(pl){const f=ROT[cfg.mode][pl.slot];return{x:side(pl.team)*f[0]*K,z:-side(pl.team)*f[1]*K}}
+function posLabel(pl){const n=cfg.mode;if(n===1)return'';return(n===6?[1,6,5,4,3,2][pl.slot]+' 號位':'')+(pl.slot===0?'（發球）':depth(pl)<4.5?'（前排）':'（後排）')}
+function rotate(t){team(t).forEach(p=>p.slot=(p.slot+1)%cfg.mode);if(t===0&&cfg.mode>1&&H&&H.human)S.rotMsg='換發輪轉！你在 '+posLabel(H)}
+const setterOf=t=>cfg.mode>=3?team(t)[1]:null;
+let msgT=0;function msg(t,d){const m=$('#msg');m.textContent=t.replace(/\n/g,'　');m.style.opacity=1;msgT=d||1.4}
+
+function setup(){
+ players.forEach(p=>scene.remove(p.m.g));players=[];
+ for(let t=0;t<2;t++)for(let i=0;i<cfg.mode;i++){
+  const mg=cfg.mgr,dd=mg?(t?mg.away[i]:mg.home[i]):null,lk=dd?dd.look:cfg.career&&t===0&&i===0?cfg.career.look:null;
+  const m=makePlayer(mg?(t?mg.awayC:mg.homeC):t?0xff5d8f:0x3d7bff,lk||randLook(),dd&&dd.num!=null?dd.num:[7,3,11,1,9,5][i]);scene.add(m.g);
+  players.push({team:t,i,human:!mg&&t===0&&i===0,data:dd,x:0,z:0,y:0,vy:0,cd:0,swing:0,anim:'',sq:0,think:0,tx:0,tz:0,face:t?Math.PI:0,m,buf:{k:null,t:0},blk:false,bo:0,jd:.1,ph:R()*5,lx:0,lz:0,run:0,slot:i,vx:0,vz:0,jvx:0,jvz:0})}
+ H=players[0];players.forEach(p=>{p.pow=50;p.jv=JV;p.sk=new Set()});
+ const cc=cfg.career,st=cc?cc.st:{spd:50,jmp:50,pow:50},tf=cc&&cc.tired?.93:1;
+ H.spd=(6.4+st.spd*.04)*tf;H.jv=(6.4+st.jmp*.02)*(cc&&cc.tired?.97:1);H.pow=st.pow;H.sk=new Set(cc?cc.sk:[]);H.reach=HREACH+(H.sk.has('dig')?.3:0);
+ reachRing.scale.setScalar(H.reach/HREACH);
+ $('#tmA').textContent=cfg.mgr?cfg.mgr.club:cc?(cfg.mode===1?cc.name:cfg.mode===2?cc.name+'組':'晨光高中'):'你方';$('#tmB').textContent=cfg.mgr?cfg.mgr.opp:cc?cc.opp:'對手';
+ if(cfg.mgr)players.forEach(p=>{const r=aiFrom(p.data,cfg.mgr.tac[p.team]);p.ai=r.a;p.pow=r.pow;p.jv=r.jv;p.nm=p.data.name;p.pid=p.data.id;if(p.team===0)p.m.g.add(smallTag((p.data.num!=null?p.data.num+' ':'')+p.data.name))});
+ if(cc){setTag(cc.name);nameTag.visible=true}else nameTag.visible=false;
+ S={score:[0,0],serveTeam:0,srv:[0,0],touches:0,tt:-1,last:null,state:'serve',timer:0,plan:null,server:null,rcv:[null,null],ev:'',stats:{k:0,b:0,a:0},ps:{}};
+ if(cc&&cc.tired)setTimeout(()=>msg('體力不足，身體有點沉重……',1.6),1700);
+ aim.set(5*K,0,0);startRally()}
+function startRally(){
+ Object.assign(S,{state:'serve',timer:0,touches:0,tt:-1,last:null,plan:null,rcv:[null,null],ev:''});
+ const srv=team(S.serveTeam).find(p=>p.slot===0);S.server=srv;
+ players.forEach(p=>{const b=base(p);Object.assign(p,{x:b.x,z:b.z,y:0,vy:0,vx:0,vz:0,jvx:0,jvz:0,tx:b.x,tz:b.z,cd:0,blk:false,lx:b.x,lz:b.z})});
+ srv.x=side(srv.team)*(CL+.8);srv.z=clamp(base(srv).z,-CW+1.5,CW-1.5);
+ ball.held=srv;ball.v.set(0,0,0);ball.fx=0;
+ const sc=S.score,mp=[0,1].find(t=>sc[t]>=cfg.to-1&&sc[t]>sc[1-t]);
+ msg((S.rotMsg?S.rotMsg+'\n':'')+(mp!==undefined?(mp===0?'賽末點！\n':'對手賽末點\n'):'')+(srv.human?'你的發球！瞄準後按「攻」':srv.nm?srv.nm+' 發球':(srv.team?'對手發球':'隊友發球')),S.rotMsg?2.4:1.6);S.rotMsg=''}
+
+/* ---------- ballistics ---------- */
+function arcTo(p0,t,apex){const Hh=Math.max(apex,p0.y+.3,t.y+.3),vy=Math.sqrt(2*G*(Hh-p0.y)),T=(vy+Math.sqrt(vy*vy+2*G*(p0.y-t.y)))/G;return new V((t.x-p0.x)/T,vy,(t.z-p0.z)/T)}
+function lineTo(p0,t,T){return new V((t.x-p0.x)/T,(t.y-p0.y+.5*G*T*T)/T,(t.z-p0.z)/T)}
+function clears(p0,v){if(Math.abs(v.x)<1e-4)return true;const tc=-p0.x/v.x;if(tc<=0)return true;return p0.y+v.y*tc-.5*G*tc*tc>NET+.36}
+function predict(h){const p=ball.p,v=ball.v;if(ball.held)return{x:p.x,z:p.z,t:0};
+ let d=v.y*v.y+2*G*(p.y-h);if(d<0){h=BR;d=Math.max(0,v.y*v.y+2*G*(p.y-h))}
+ const t=Math.max(0,(v.y+Math.sqrt(d))/G);return{x:p.x+v.x*t,z:p.z+v.z*t,t}}
+function inReach(pl,r){const dx=ball.p.x-pl.x,dz=ball.p.z-pl.z,dy=ball.p.y-pl.y;return ball.p.x*side(pl.team)>-.05&&dx*dx+dz*dz<r*r&&dy>.25&&dy<3}
+function quality(pl,skill,r){const sp=ball.v.length(),off=Math.hypot(ball.p.x-pl.x,ball.p.z-pl.z)/r;return((Math.max(0,sp-9)/16)*.9+off*off*.5)*skill}
+function sloppy(tg,e){tg.x+=(R()-.5)*e*4;tg.z+=(R()-.5)*e*4;if(e>.75&&R()<(e-.75)*.8){tg.x+=(R()-.5)*10;tg.z+=(R()-.5)*10}return tg}
+function pickTarget(t,d,gen){const opp=team(t);let best=null,bs=-1;
+ for(let k=0;k<d.pick;k++){const c=gen();const sc=Math.min(...opp.map(o=>Math.hypot(o.x-c.x,o.z-c.z)));if(sc>bs){bs=sc;best=c}}
+ best.x+=(R()-.5)*d.noise*2;best.z+=(R()-.5)*d.noise*2;return best}
+const randTarget=(t,d,spike)=>pickTarget(t,d,()=>new V(side(t)*(spike?3+R()*(CL-3.4):1.5+R()*(CL-2)),0,(R()*2-1)*(CW-.7)));
+const tipTarget=(t,d)=>pickTarget(t,{pick:d.pick,noise:d.noise*.4},()=>new V(side(t)*(1+R()*2.6),0,(R()*2-1)*(CW-.9)));
+function planPass(pl){const s=side(pl.team),n=cfg.mode;
+ if(n===1)return{tg:new V(s*2.3,3.1,clamp(pl.z,-CW+1.5,CW-1.5)),plan:{next:pl,role:'attack'}};
+ if(n===2){const o=mate(pl);return{tg:o.human?new V(s*2,2.3,clamp(o.z,-CW+1.2,CW-1.2)):new V(s*1.8,2.3,0),plan:{next:o,role:'set'}}}
+ const st=setterOf(pl.team),tg=new V(s*1.9,2.3,.8);
+ if(st!==pl)return{tg,plan:{next:st,role:'set'}};
+ let best=null,bd=1e9;for(const p of team(pl.team))if(p!==pl){const d=Math.hypot(p.x-tg.x,p.z-tg.z);if(d<bd){bd=d;best=p}}
+ return{tg,plan:{next:best,role:'set'}}}
+function chooseAttacker(st){const c=team(st.team).filter(p=>p!==st);if(!c.length)return st;
+ const h=c.find(p=>p.human);if(h&&(c.length===1||R()<.5))return h;
+ const ai=c.filter(p=>!p.human),fr=ai.filter(p=>depth(p)<4.5),pool=fr.length?fr:ai;return pool.length?pool[R()*pool.length|0]:h}
+function setSpot(att){const s=side(att.team),zl=CW-1.2;
+ return new V(s*(cfg.mode>=5&&depth(att)>6?3.6:2.3),3.1,att.human?clamp(att.z,-zl,zl):clamp(base(att).z,-zl,zl))}
+function rollBlock(t,tz){const d=DIFF[cfg.diff];let c=team(t).filter(p=>!p.human);
+ if(cfg.mode===1)return;
+ if(cfg.mode===2)c=c.slice(0,1);else c=c.filter(p=>depth(p)<4);
+ c.sort((a,b)=>Math.abs(a.z-tz)-Math.abs(b.z-tz));
+ c.slice(0,2).forEach((p,k)=>{const pd=P(p);p.blk=R()<pd.block*(cfg.mgr&&cfg.mgr.tac[1-t]==='quick'?.7:1);p.bo=k?(p.z>tz?.75:-.75):0;p.jd=.04+R()*.12*pd.skill})}
+
+function doHit(pl,kind,tg,plan,o={}){
+ const p0=ball.p.clone();let v;
+ if(kind==='spike'){const d=Math.hypot(tg.x-p0.x,tg.z-p0.z);let T=Math.max(.26,d/(20+(pl.pow||50)*.12));v=lineTo(p0,tg,T);if(!o.raw)for(;T<1.5;T+=.04){v=lineTo(p0,tg,T);if(clears(p0,v))break}}
+ else if(kind==='over'||kind==='serve'||kind==='tip'){let a=o.apex||(kind==='tip'?Math.max(p0.y+.35,NET+.9):kind==='serve'?3.9:3.6);v=arcTo(p0,tg,a);if(!o.raw)for(;a<9;a+=.25){v=arcTo(p0,tg,a);if(clears(p0,v))break}}
+ else v=arcTo(p0,tg,kind==='set'?(cfg.mgr&&cfg.mgr.tac[pl.team]==='quick'?4.3:5.3):5);
+ ball.v.copy(v);ball.held=null;ball.fx=kind==='spike'?1:0;hist.length=0;
+ if(kind==='serve'){S.tt=-1;S.touches=0;S.ev='serve'}else{if(S.tt!==pl.team){S.tt=pl.team;S.touches=0}S.touches++;S.ev=''}
+ if(S.touches>3&&S.state==='play'){S.last=pl;award(1-pl.team,'四次擊球');return}
+ S.last=pl;S.rcv=[null,null];pl.cd=.4;pl.swing=.3;pl.anim=kind;S.state='play';
+ S.plan=plan||null;S.bigServe=!!o.big;S.trick=!!o.trick;
+ if(kind==='set'&&plan)rollBlock(1-pl.team,tg.z);
+ if(kind==='spike'){const rt=1-pl.team;S.dig=R()<teamDig(rt)*(1.35-(pl.pow||50)*.007);S.digMiss=R()<.5}
+ sfx(kind);if(kind==='spike')spikeFX(pl)}
+function aiAttack(pl,e){const d=P(pl),opp=1-pl.team,air=pl.y>.25&&ball.p.y>NET+.15;
+ const blockUp=team(opp).some(o=>o.y>.2&&Math.abs(o.x)<1.5);
+ let kind=air?'spike':'over';if(air&&R()<d.tip*(blockUp?2.2:1))kind='tip';
+ const tg=kind==='tip'?tipTarget(opp,d):randTarget(opp,d,kind==='spike');
+ if(kind==='spike'&&R()<.035*d.skill){doHit(pl,'spike',new V(side(opp)*.8,0,tg.z),null,{raw:true});return}
+ doHit(pl,kind,sloppy(tg,(kind==='spike'?.18:.1)+e*.35))}
+function aiShot(pl){const d=P(pl),n=S.tt===pl.team?S.touches:0,role=n===0?'pass':n>=2?'attack':(S.plan?S.plan.role:'attack');let e=quality(pl,d.skill,REACH);
+ if(ball.fx&&S.last&&S.last.team!==pl.team)e+=S.dig?.25:1.1;
+ if(S.last&&S.last.team!==pl.team){if(S.bigServe)e+=.35;if(S.trick)e+=.6}
+ if(role==='attack'){aiAttack(pl,e);return}
+ if(role==='pass'){const r=planPass(pl);doHit(pl,'pass',sloppy(r.tg,e),r.plan);return}
+ const att=chooseAttacker(pl);doHit(pl,'set',sloppy(setSpot(att),e*.5*(d.set!==undefined?clamp(1.6-d.set*.012,.4,1.6):1)),{next:att,role:'attack'})}
+function aiServe(pl){const d=P(pl),opp=1-pl.team;let tg=randTarget(opp,{pick:d.pick,noise:d.noise*1.2},false);
+ if(R()<d.sf){if(R()<.5){doHit(pl,'serve',new V(side(opp)*3,0,tg.z),null,{raw:true,apex:2.2});return}tg.x+=side(opp)*3.5}
+ doHit(pl,'serve',tg,null,{apex:d.sv,big:!!d.big})}
+
+/* ---------- human ---------- */
+function dirTarget(kind){const L=Math.hypot(IN.x,IN.z);if(L<.35)return null;
+ return kind==='tip'?new V(clamp(2.2+IN.x*1.4,1,4.4),0,IN.z*(CW-.9)):new V(clamp(5.4*K+IN.x*3.1*K,2.4,CL-.4),0,IN.z*(CW-.6))}
+const humanTarget=kind=>dirTarget(kind)||new V(aim.x,0,aim.z);
+function humanTry(k){
+ if(S.state==='serve'&&ball.held===H){const big=H.sk.has('serve');doHit(H,'serve',sloppy(new V(aim.x,0,aim.z),.12),null,{apex:4.4-H.pow*.01-(big?.6:0),big});return true}
+ if(S.state!=='play'||H.cd>0||!inReach(H,H.reach))return false;
+ if(S.ev==='serve'&&S.last&&S.last.team===0)return false;
+ const n=S.tt===0?S.touches:0;if(n>=3)return false;
+ let e=quality(H,1,H.reach);if(ball.fx&&S.last&&S.last.team!==0)e=e*1.3+.2;if(H.sk.has('dig'))e*=.6;
+ if(k==='atk'||k==='tip'||n>=2||(cfg.mode===1&&n>=1)){
+  const air=H.y>.25&&ball.p.y>NET+.1,kind=k==='tip'?'tip':air?'spike':'over';
+  const ac=kind==='spike'&&H.sk.has('aim');doHit(H,kind,sloppy(humanTarget(kind),(kind==='spike'?(ac?.04:.15):.08)+e*(ac?.2:.4)),null,{trick:kind==='tip'&&H.sk.has('tip')})}
+ else if(n===0){const r=planPass(H);doHit(H,'pass',sloppy(r.tg,e),r.plan)}
+ else{const att=chooseAttacker(H);doHit(H,'set',sloppy(setSpot(att),e*.5),{next:att,role:'attack'})}
+ return true}
+function jump(p){if(p.y===0&&p.vy===0){p.vy=p.jv||JV;p.sq=-.12;p.jvx=p.vx*.42;p.jvz=p.vz*.42}}
+function press(k){if(mode!=='game'||!H||!H.human)return;
+ if(k==='jump'){jump(H);return}
+ H.buf={k,t:.3};
+ if((k==='atk'||k==='tip')&&H.y===0&&S.state==='play'&&ball.p.y>2.7&&Math.hypot(ball.p.x-H.x,ball.p.z-H.z)<2.3){jump(H);H.buf.t=.65}}
+
+/* ---------- AI ---------- */
+function designated(t){
+ if(S.state!=='play')return null;
+ if(S.ev==='serve'&&S.last&&S.last.team===t)return null;
+ if(S.tt===t){if(S.touches>=3)return null;if(S.plan&&S.plan.next)return S.plan.next}
+ else if(predict(BR).x*side(t)<=0)return null;
+ if(S.rcv[t])return S.rcv[t];
+ const pr=predict(1.1),st=setterOf(t);let best=null,bd=1e9;
+ for(const p of team(t)){let d=Math.hypot(p.x-pr.x,p.z-pr.z);if(p===st)d=d*1.7+.5;if(p.y>.3)d+=2;if(d<bd){bd=d;best=p}}
+ return S.rcv[t]=best}
+function roleOf(t){if(S.tt!==t||S.touches===0)return'pass';if(S.touches>=2)return'attack';return S.plan?S.plan.role:'attack'}
+function aiMove(pl,tx,tz,dt,spd){const dx=tx-pl.x,dz=tz-pl.z,L=Math.hypot(dx,dz);
+ if(pl.y>0||pl.vy>0){pl.x+=pl.jvx*dt;pl.z+=pl.jvz*dt}
+ else if(L>.05){const st=Math.min(L,spd*dt),iv=1/Math.max(dt,1e-4);pl.x+=dx/L*st;pl.z+=dz/L*st;pl.vx=dx/L*st*iv;pl.vz=dz/L*st*iv}else{pl.vx=pl.vz=0}
+ pl.x=side(pl.team)<0?clamp(pl.x,-XM,-.35):clamp(pl.x,.35,XM);pl.z=clamp(pl.z,-ZM,ZM)}
+function aiThink(pl,dt){
+ const s=side(pl.team),d=P(pl),opp=1-pl.team;
+ if(S.state==='serve'){if(S.server===pl){S.timer+=dt;if(S.timer>1.3)aiServe(pl)}else{const b=base(pl);aiMove(pl,b.x,b.z,dt,d.spd)}return}
+ if(S.state!=='play'){const b=base(pl);aiMove(pl,b.x,b.z,dt,d.spd*.5);return}
+ const des=DES[pl.team],role=ROLE[pl.team],att=DES[opp];
+ const blocking=pl.blk&&S.tt===opp&&ROLE[opp]==='attack'&&att;
+ pl.think-=dt;
+ if(pl.think<=0){pl.think=d.react;
+  if(des===pl){const pr=predict(role==='attack'?3.1:role==='set'?2.3:1.1);pl.tx=pr.x;pl.tz=pr.z}
+  else if(blocking){const pa=predict(3.1);pl.tx=s*.55;pl.tz=clamp(pa.z+pl.bo,-CW,CW)}
+  else if(des&&cfg.mode===2){if(role==='pass'){pl.tx=s*1.8;pl.tz=0}else if(role==='set'){pl.tx=s*2.8;pl.tz=pl.z>0?2.4*K:-2.4*K}else{pl.tx=s*4.5*K;pl.tz=-des.z*.6}}
+  else if(des&&setterOf(pl.team)===pl&&role==='pass'){pl.tx=s*1.9;pl.tz=.8}
+  else if(des&&role==='set'&&depth(pl)<4.5){pl.tx=s*3.4;pl.tz=base(pl).z}
+  else{const b=base(pl);pl.tx=b.x;pl.tz=b.z}}
+ aiMove(pl,pl.tx,pl.tz,dt,d.spd);
+ if(blocking&&pl.y===0&&att.y>.05&&att.vy>0&&att.vy<JV-GP*pl.jd&&Math.abs(pl.x)<1.5)jump(pl);
+ if(des===pl){
+  if(role==='attack'&&pl.y===0&&S.tt===pl.team){const pa=predict(3.1);if(pa.t<.36&&pa.t>.18&&Math.hypot(pa.x-pl.x,pa.z-pl.z)<1.3)jump(pl)}
+  if(pl.cd<=0&&inReach(pl,REACH)&&ball.v.y<2&&!(ball.fx&&S.last&&S.last.team!==pl.team&&!S.dig&&S.digMiss)&&!(role==='attack'&&pl.y===0&&ball.p.y>2.5&&S.tt===pl.team))aiShot(pl)}}
+
+function endRally(){
+ const x=ball.p.x,z=ball.p.z,inb=Math.abs(x)<=CL+BR&&Math.abs(z)<=CW+BR,land=x<0?0:1;
+ const w=inb?1-land:(S.last?1-S.last.team:1-S.serveTeam),lt=S.last?S.last.team:-1;
+ let why='';
+ if(!inb)why=S.ev==='serve'?'發球出界':'出界';
+ else if(S.ev==='net'&&land===lt)why=lt===-1?'':'掛網';
+ else if(S.ev==='block'&&w===lt)why='攔網得分';
+ else if(S.ev==='serve'&&w===lt)why='發球得分 ACE';
+ else if(ball.fx&&w===lt)why='殺球得分';
+ award(w,why)}
+function award(w,why){
+ if(w===0&&S.last&&S.last.human&&S.stats){if(why==='殺球得分')S.stats.k++;else if(why==='攔網得分')S.stats.b++;else if(why==='發球得分 ACE')S.stats.a++}
+ if(cfg.mgr&&S.last&&S.last.pid&&S.last.team===w&&why){const q=S.ps[S.last.pid]||(S.ps[S.last.pid]={k:0,b:0,a:0});if(why==='殺球得分')q.k++;else if(why==='攔網得分')q.b++;else if(why==='發球得分 ACE')q.a++;why=S.last.nm+' '+why}
+ if(cfg.mgr)mgrFatigue();
+ S.score[w]++;S.state='point';S.timer=1.8;S.winner=w;
+ hype[w]=1.2;cheer(w===0?1:.7);
+ if(w===0)fans.filter(f=>f.team===0).forEach((f,k)=>{if(k%3===0)burst(f.g.position.clone().add(new V(0,1.6,0)),3,[0xff5d8f,0xffd23f,0x3d7bff,0x22c3a6,0xffffff],3,5,6,.9)});
+ sfx(w===0?'point':'lose');msg((w===0?'得分！':'失分')+(why?'\n'+why:''),1.6)}
+
+/* ---------- input ---------- */
+const keys={},joy={x:0,z:0,id:null,ox:0,oy:0};let aimId=null;
+addEventListener('keydown',e=>{const k=e.key.toLowerCase();keys[k]=true;
+ if(k===' '){press('jump');e.preventDefault()}if(k==='j')press('pass');if(k==='k')press('atk');if(k==='l')press('tip')});
+addEventListener('keyup',e=>{keys[e.key.toLowerCase()]=false});
+const ray=new THREE.Raycaster(),plane=new THREE.Plane(new V(0,1,0),0),hit=new V();
+function setAim(e){const r=cv.getBoundingClientRect();ray.setFromCamera({x:(e.clientX-r.left)/r.width*2-1,y:-(e.clientY-r.top)/r.height*2+1},cam);
+ if(ray.ray.intersectPlane(plane,hit)&&hit.x>.2)aim.set(clamp(hit.x,.5,XM),0,clamp(hit.z,-ZM,ZM))}
+cv.addEventListener('contextmenu',e=>e.preventDefault());
+cv.addEventListener('pointerdown',e=>{
+ if(e.pointerType!=='mouse'&&joy.id===null&&e.clientX<innerWidth*.48&&e.clientY>innerHeight*.4){
+  joy.id=e.pointerId;joy.ox=e.clientX;joy.oy=e.clientY;const j=$('#joy');j.style.left=e.clientX+'px';j.style.top=e.clientY+'px';j.style.display='block'}
+ else{aimId=e.pointerId;setAim(e);if(e.pointerType==='mouse'){if(e.button===0)press('atk');if(e.button===2)press('pass');if(e.button===1)press('tip')}}
+ try{cv.setPointerCapture(e.pointerId)}catch(_){}});
+cv.addEventListener('pointermove',e=>{
+ if(e.pointerId===joy.id){let dx=e.clientX-joy.ox,dy=e.clientY-joy.oy;const L=Math.hypot(dx,dy),m=50;if(L>m){dx*=m/L;dy*=m/L}
+  $('#knob').style.transform=`translate(${dx}px,${dy}px)`;joy.z=dx/m;joy.x=-dy/m}
+ else if(e.pointerId===aimId||e.pointerType==='mouse')setAim(e)});
+function endPtr(e){if(e.pointerId===joy.id){joy.id=null;joy.x=joy.z=0;$('#joy').style.display='none';$('#knob').style.transform=''}if(e.pointerId===aimId)aimId=null}
+cv.addEventListener('pointerup',endPtr);cv.addEventListener('pointercancel',endPtr);
+[['#bJump','jump'],['#bPass','pass'],['#bTip','tip'],['#bAtk','atk']].forEach(([id,k])=>{const b=$(id);
+ b.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();b.classList.add('dn');press(k)});
+ ['pointerup','pointercancel','pointerleave'].forEach(ev=>b.addEventListener(ev,()=>b.classList.remove('dn')))});
+
+/* ---------- update ---------- */
+function update(dt){
+ if(H.human){let mx=joy.x+((keys.w||keys.arrowup)?1:0)-((keys.s||keys.arrowdown)?1:0),mz=joy.z+((keys.d||keys.arrowright)?1:0)-((keys.a||keys.arrowleft)?1:0);
+ const L=Math.hypot(mx,mz);if(L>1){mx/=L;mz/=L}IN.x=mx;IN.z=mz;
+ if(H.y===0&&H.vy===0){H.vx=mx*H.spd;H.vz=mz*H.spd}else{H.vx=H.jvx;H.vz=H.jvz}
+ H.x+=H.vx*dt;H.z+=H.vz*dt;
+ H.x=S.state==='serve'&&S.server===H?clamp(H.x,-XM,-CL-.1):clamp(H.x,-XM,-.35);H.z=clamp(H.z,-ZM,ZM);
+ if(H.buf.t>0){if(humanTry(H.buf.k))H.buf.t=0;else H.buf.t-=dt}}
+ for(const p of players){p.cd-=dt;p.swing=Math.max(0,p.swing-dt);
+  if(p.y>0||p.vy>0){p.vy-=GP*dt;p.y+=p.vy*dt;if(p.y<=0){p.y=0;p.vy=0;p.sq=.16}}
+  p.sq*=Math.pow(.002,dt)}
+ DES=[designated(0),designated(1)];ROLE=[roleOf(0),roleOf(1)];
+ for(const p of players)if(!p.human)aiThink(p,dt);
+ if(ball.held){const s=ball.held;ball.p.set(s.x-side(s.team)*.45,1.95+s.y+Math.sin(performance.now()/180)*.06,s.z)}
+ else{const px=ball.p.x;ball.p.addScaledVector(ball.v,dt);ball.p.y-=.5*G*dt*dt;ball.v.y-=G*dt;
+  if(Math.sign(px)!==Math.sign(ball.p.x)){
+   if(ball.p.y<NET+BR&&Math.abs(ball.p.z)<CW+.7){const sv=S.ev==='serve';ball.p.x=(Math.sign(px)||1)*BR*1.05;ball.v.x*=-.25;ball.v.z*=.6;S.ev='net';S.rcv=[null,null];ball.fx=0;sfx('net');
+    if(sv&&S.state==='play'&&S.last)award(1-S.last.team,'發球掛網')}
+   else{S.tt=-1;S.plan=null;S.rcv=[null,null];players.forEach(p=>p.blk=false)}}
+  if(S.state==='play')for(const p of players){
+   if(S.ev==='serve'||p.y<.15||p.cd>0||Math.abs(ball.p.x)>1.1||Math.sign(ball.v.x)!==side(p.team)||(S.last&&S.last.team===p.team))continue;
+   const dx=ball.p.x-p.x,dz=ball.p.z-p.z;
+   const wall=p.sk&&p.sk.has('block');
+   if(dx*dx+dz*dz<(wall?1:.64)&&ball.p.y>p.y+1.5&&ball.p.y<p.y+3){
+    if(R()<(wall?.8:.55)){ball.v.x=-ball.v.x*.5;ball.v.y=Math.abs(ball.v.y)*.25+1.5;ball.v.z*=.5;S.tt=-1;S.ev='block';msg('攔網！',.8);FX.shake=Math.max(FX.shake,.3);if(mode==='game')popText('BLOCK!',p.team?'#ff8fb1':'#8fd0ff')}
+    else{ball.v.set(side(p.team)*2.2,4.6,ball.v.z*.3);S.tt=p.team;S.touches=0;S.ev='';msg('觸攔',.6)}
+    burst(ball.p.clone(),14,[0xffffff,0xbfe6ff],5,1);
+    S.last=p;S.plan=null;S.rcv=[null,null];p.cd=.4;p.swing=.3;p.anim='block';ball.fx=0;sfx('block');break}}
+  if(ball.p.y<=BR){ball.p.y=BR;
+   if(ball.fx&&S.state==='play')groundFX();
+   if(S.state==='play')endRally();ball.fx=0;
+   ball.v.y=Math.abs(ball.v.y)*.45;ball.v.x*=.6;ball.v.z*=.6}}
+ if(S.state==='point'){S.timer-=dt;if(S.timer<=0){const w=S.winner,sc=S.score;
+  if(sc[w]>=cfg.to&&sc[w]-sc[1-w]>=2){S.state='over';hype[w]=1.5;cheer(1.3);if(cfg.demo){demoStart();return}if(cfg.career){careerEnd(w);return}if(cfg.mgr){mgrEnd(w);return}$('#ovT').textContent=w===0?'勝利！':'可惜，落敗';$('#ovS').textContent=`最終比分 ${sc[0]} : ${sc[1]}`;$('#over').classList.remove('hide');return}
+  if(w!==S.serveTeam){S.serveTeam=w;rotate(w)}startRally()}}
+ $('#s0').textContent=S.score[0];$('#s1').textContent=S.score[1];
+ $('#sv0').style.visibility=S.serveTeam===0?'visible':'hidden';$('#sv1').style.visibility=S.serveTeam===1?'visible':'hidden';
+ const n=S.state==='play'&&S.tt===0?S.touches:0;document.querySelectorAll('#touch i').forEach((d,i)=>d.classList.toggle('on',i<n));
+ let cue='';if(H.human&&DES[0]===H)cue=S.tt!==0||S.touches===0?'你接！':ROLE[0]==='attack'?'扣球！':'舉球！';
+ const c=$('#cue');if(cue)c.textContent=cue;c.style.opacity=cue?1:0}
+
+/* ---------- render ---------- */
+const camPos=new V(-18,9,0),camLook=new V(3,0,0);let lt=performance.now(),T=0;
+function armPose(p){const sw=p.swing>0?1-p.swing/.3:0,a=p.swing>0?p.anim:(p.y>.2?'air':'idle');
+ if(a==='pass')return[1.15,1.15];if(a==='set')return[2.8,2.8];if(a==='block')return[3,3];if(a==='tip')return[1,2.9];
+ if(a==='spike'||a==='serve'||a==='over')return[1.2,3-2.2*sw];
+ if(a==='air')return Math.abs(p.x)<1.6?[3,3]:[1.4,2.9];
+ const s=p.run>.5?Math.sin(T*14+p.ph)*.6:0;return[.3+s,.3-s]}
+function render(dt){
+ T+=dt;
+ clouds.forEach(c=>{c.position.z+=dt*.9;if(c.position.z>95)c.position.z=-95});
+ birds.forEach(b=>{b.a+=dt*b.sp;b.o.position.set(20+Math.cos(b.a)*b.r,b.h+Math.sin(T+b.ph)*.6,Math.sin(b.a)*b.r);b.o.rotation.y=-b.a;const f=Math.sin(T*9+b.ph)*.6;b.pl.rotation.y=f;b.pr.rotation.y=-f});
+ flags.forEach(f=>f.rotation.x=Math.sin(T*2.6+f.userData.ph)*.35);
+ hype[0]*=Math.exp(-dt*.5);hype[1]*=Math.exp(-dt*.5);
+ for(const f of fans){const e=.18+Math.min(1,hype[f.team]);
+  f.rig.position.y=Math.abs(Math.sin(T*f.sp*.8+f.ph))*.22*e;
+  const w=Math.sin(T*f.sp+f.ph);
+  if(e>.5){f.aL.rotation.z=2.5+w*.5;f.aR.rotation.z=2.5-w*.5}else{f.aL.rotation.z=.9+w*.5;f.aR.rotation.z=.9-w*.5}
+  const dx=ball.p.x-f.g.position.x,dz=ball.p.z-f.g.position.z;f.g.rotation.y=Math.atan2(-dz,dx);
+  f.hd.rotation.z=clamp(Math.atan2(ball.p.y-f.g.position.y-1,Math.hypot(dx,dz))*.5,-.1,.35)}
+ for(const p of players){const g=p.m.g;
+  p.run=Math.hypot(p.x-p.lx,p.z-p.lz)/Math.max(dt,1e-3);p.lx=p.x;p.lz=p.z;
+  g.position.set(p.x,p.y,p.z);
+  const f=Math.atan2(-(ball.p.z-p.z),ball.p.x-p.x);let d=f-p.face;d=Math.atan2(Math.sin(d),Math.cos(d));p.face+=d*Math.min(1,dt*10);g.rotation.y=p.face;
+  p.m.rig.scale.set(1+p.sq*.6,1-p.sq,1+p.sq*.6);
+  p.m.rig.position.y=p.run>.5&&p.y===0?Math.abs(Math.sin(T*14+p.ph))*.07:0;
+  const[l,r]=armPose(p);p.m.aL.rotation.z+=(l-p.m.aL.rotation.z)*Math.min(1,dt*20);p.m.aR.rotation.z+=(r-p.m.aR.rotation.z)*Math.min(1,dt*20);
+  p.m.hd.rotation.z=clamp(Math.atan2(ball.p.y-(p.y+1.3),Math.hypot(ball.p.x-p.x,ball.p.z-p.z)+.5)*.5,-.15,.45);
+  const bl=((T+p.ph)%3.4)<.12;p.m.eyes.forEach(e=>e.scale.y=bl?.15:(e.userData.sy||1.3))}
+ ballMesh.position.copy(ball.p);ballMesh.rotation.x+=ball.v.z*dt*2;ballMesh.rotation.z-=ball.v.x*dt*2;
+ // spike FX
+ const hot=ball.fx>0&&!ball.held;
+ ballMat.emissive.setHex(hot?0xff5a00:0);glow.visible=hot;
+ if(hot){glow.position.copy(ball.p);glow.scale.setScalar(1.3+Math.sin(T*40)*.25);hist.unshift(ball.p.clone());if(hist.length>trail.length)hist.length=trail.length;
+  if(R()<.6)burst(ball.p,1,[0xffd23f,0xff8a3d],1,.5,0,.7)}
+ else if(hist.length)hist.pop();
+ trail.forEach((s,i)=>{const h=hist[i];s.visible=!!h;if(h){s.position.copy(h);s.scale.setScalar(.95*(1-i/trail.length)+.1);s.material.opacity=1-i/trail.length}});
+ for(const p of parts)if(p.life>0){p.life-=dt;p.v.y-=p.g*dt;p.m.position.addScaledVector(p.v,dt);if(p.m.position.y<.05){p.m.position.y=.05;p.v.y*=-.3;p.v.x*=.7;p.v.z*=.7}p.m.material.opacity=Math.max(0,p.life/p.max);if(p.life<=0)p.m.visible=false}
+ for(const s of shocks)if(s.t>0){s.t-=dt;const u=1-s.t/.4;s.m.scale.setScalar(1+u*s.grow);s.m.material.opacity=Math.max(0,1-u);if(!s.flat)s.m.lookAt(cam.position);if(s.t<=0)s.m.visible=false}
+ const game=mode==='game'&&H,ctl=game&&H.human;
+ aimRing.visible=aimDot.visible=meRing.visible=reachRing.visible=meArrow.visible=!!ctl;nameTag.visible=!!(ctl&&cfg.career);
+ const live=game&&S.state==='play'&&!ball.held;landRing.visible=live;
+ if(live){const l=predict(BR);landRing.position.set(l.x,.05,l.z);landRing.material.color.set(l.x<0?0xff3355:0xffffff)}
+ if(ctl){
+  const dt2=S.state==='play'?dirTarget('spike'):null,at=dt2||aim,col=dt2?0xff8a3d:0xffd23f;
+  aimRing.position.set(at.x,.04,at.z);aimDot.position.set(at.x,.045,at.z);aimRing.rotation.z+=dt;aimRing.material.color.set(col);aimDot.material.color.set(col);
+  meRing.position.set(H.x,.05,H.z);reachRing.position.set(H.x,.05,H.z);meArrow.position.set(H.x,H.y+2.15+Math.sin(T*5)*.08,H.z);meArrow.rotation.y+=dt*2;
+  nameTag.position.set(H.x,H.y+2.6,H.z);
+  const ok=(S.state==='play'&&inReach(H,H.reach)&&!(S.tt===0&&S.touches>=3))||(S.state==='serve'&&ball.held===H);
+  reachRing.material.color.set(ok?0x5dff7a:0x7fe6ff);reachRing.material.opacity=ok?.95:.35;
+  const k=cam.aspect<1?1.5:1;
+  camPos.lerp(new V(H.x-9.5*k-1,5.8*k+1.4,H.z*.4),1-Math.exp(-4*dt));
+  camLook.lerp(new V(H.x+9.5,.6,H.z*.28),1-Math.exp(-4*dt))}
+ else if(game){const k=cam.aspect<1?1.7:1;camPos.lerp(new V(ball.p.x*.3,8.5*k,16.5*k),1-Math.exp(-2.5*dt));camLook.lerp(new V(ball.p.x*.45,.6,0),1-Math.exp(-3*dt))}
+ else if(mode==='mgr'&&mPrev.length){const wide=cam.aspect>=1;mPrev.forEach(o=>{o.m.rig.position.y=Math.abs(Math.sin(T*3+o.ph))*.05;o.m.aL.rotation.z=.4+Math.sin(T*3+o.ph)*.3;o.m.aR.rotation.z=.4-Math.sin(T*3+o.ph)*.3;const bl=((T+o.ph)%3.4)<.12;o.m.eyes.forEach(e=>e.scale.y=bl?.15:(e.userData.sy||1.3))});
+  camPos.set(wide?1.5:2.5,wide?3.6:5.5,0);camLook.set(-6.5,wide?.6:-2.6,wide?-2.9:0)}
+ else if(mode==='career'&&prev){const g=prev.m.g,wide=cam.aspect>=1;prev.t-=dt;
+  const u=prev.t>0?1-prev.t/.8:0,jy=prev.t>0?Math.sin(u*Math.PI)*1.1:0;
+  g.position.set(-6,jy,0);g.rotation.y=Math.sin(T*.7)*.3;prev.m.rig.position.y=prev.t>0?0:Math.abs(Math.sin(T*3))*.05;
+  const a=prev.t>0?3:.4+Math.sin(T*3)*.25;prev.m.aL.rotation.z=a;prev.m.aR.rotation.z=prev.t>0?3:.4-Math.sin(T*3)*.25;
+  const bl=(T%3.4)<.12;prev.m.eyes.forEach(e=>e.scale.y=bl?.15:(e.userData.sy||1.3));
+  camPos.set(wide?-2.3:-.2,wide?1.5:2.4,0);camLook.set(-6,wide?1:-1.8,wide?-1.3:0)}
+ else{camPos.set(Math.cos(T*.08)*24,9.5,Math.sin(T*.08)*24);camLook.lerp(new V(ball.p.x*.4,1.2,ball.p.z*.3),1-Math.exp(-2*dt))}
+ cam.position.copy(camPos);
+ if(FX.shake>.01){cam.position.x+=(R()-.5)*FX.shake*.6;cam.position.y+=(R()-.5)*FX.shake*.6;cam.position.z+=(R()-.5)*FX.shake*.6;FX.shake*=Math.exp(-dt*7)}
+ cam.lookAt(camLook);
+ if(msgT>0){msgT-=dt;if(msgT<=0)$('#msg').style.opacity=0}
+ renderer.render(scene,cam)}
+function loop(now){requestAnimationFrame(loop);if(document.body.dataset.m!==mode)document.body.dataset.m=mode;document.body.classList.toggle('mg',mode==='game'&&!!cfg.mgr);const dt=Math.min(.033,(now-lt)/1000);lt=now;
+ let gdt=dt;if(FX.stop>0){FX.stop-=dt;gdt=dt*.08}
+ if(mode==='menu'&&cfg.demo&&H&&S.state!=='over'){MUTE=true;update(gdt);MUTE=false}
+ if(mode==='game'&&S.state!=='over'){const n=cfg.mgr?cfg.mgr.speed:1;for(let i=0;i<n&&mode==='game'&&S.state!=='over';i++)update(gdt)}render(dt)}
+function resize(){renderer.setSize(innerWidth,innerHeight,false);cam.aspect=innerWidth/innerHeight;cam.fov=cam.aspect<1?62:50;cam.updateProjectionMatrix()}
+addEventListener('resize',resize);resize();requestAnimationFrame(loop);
+
+/* ---------- career mode ---------- */
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const TEAM_DEF={...TEAM};
+function preset(l){l=clamp(l,0,1);const e=DIFF.easy,p=DIFF.pro,o={};for(const k in e)o[k]=e[k]+(p[k]-e[k])*l;o.pick=Math.round(o.pick);return o}
+const RANK=v=>v>=90?'S':v>=80?'A':v>=70?'B':v>=60?'C':v>=50?'D':v>=40?'E':v>=30?'F':'G';
+const RKC={S:'#ff3d7f',A:'#ff8a3d',B:'#f0a800',C:'#c9b400',D:'#4fae5a',E:'#1f9e92',F:'#3d7bff',G:'#8a93a6'};
+const STN={spd:'速度',jmp:'跳躍',pow:'力道'},STC={spd:'#3d7bff',jmp:'#1f9e92',pow:'#ff5d8f'};
+const STD={spd:'跑位移動速度',jmp:'起跳高度、滯空與攔網高度',pow:'扣球與發球球速，對手更難接'};
+const HAIRN=['短髮','馬尾','丸子頭','刺蝟頭','鮑伯頭','長髮','龐克頭','爆炸頭','平頭','雙馬尾','旁分','頭頂髻'],EYEN=['圓眼','瞇瞇眼','閃亮眼'],ACCN=['無','頭帶','眼鏡','護腕','護膝'],PANTN=['短褲','五分褲','緊身褲'],SHIRTN=['短袖','無袖','長袖'];
+const SKILLS=[{id:'serve',n:'重砲發球',d:'發球更快更低，對手接發更容易失誤',c:60},{id:'block',n:'鐵壁',d:'攔網範圍變大，更容易直接攔死',c:60},
+ {id:'dig',n:'救球達人',d:'可擊球範圍 +0.3 公尺，接球失誤減少',c:55},{id:'aim',n:'精準扣球',d:'扣球落點誤差大幅降低',c:50},{id:'tip',n:'吊球高手',d:'你的吊球讓對手更難接',c:45}];
+const MAXW=28;
+const OFFICIAL={8:{n:'街頭爭霸賽',mode:1,to:15,lv:.42,opp:'街頭王者 阿豹'},16:{n:'雙打錦標賽',mode:2,to:15,lv:.62,opp:'鐵壁兄弟'},
+ 22:{n:'高中聯賽預賽',mode:6,to:21,lv:.76,opp:'青峰高中'},28:{n:'全國大賽決賽',mode:6,to:25,lv:.95,opp:'天鷹學園'}};
+const STAGE=[null,{t:'街頭特訓',m:1,to:11},{t:'雙人修行',m:2,to:15},{t:'晨光高中排球隊',m:6,to:15}];
+const OPPN=[null,['公園阿伯','巷口少年 小凱','晨跑族 阿美','街頭新秀 阿豪','夜市小霸王'],['海風雙人組','雙子星','熱血兄妹','沙灘浪人'],['港都高中','山城高中','東門高中','南風商工','北辰高中']];
+const MGR=['今天也要加油喔！我幫你準備了運動飲料。','我看了上次比賽的影片，你的起跳時機越來越好了！','累了就要休息，受傷就什麼都沒了。',
+ '想變強的話，經驗點記得來找我換成實力喔。','聽說最近的對手都很強……不過你一定沒問題的！','練習的時候我都在旁邊看喔，你的扣球越來越有力了。'];
+const stageOf=w=>w<=8?1:w<=16?2:3;
+let C=null,cvScreen='',draft=null,prev=null,pend=null,resetArm=false,mgrLine='';
+const newDraft=()=>({name:'',look:{...randLook(),acc:0,h:1},st:{spd:40,jmp:40,pow:40}});
+const cost=v=>6+Math.floor(v/10)*3;
+
+// ---- save: per-viewer db when signed in, localStorage as fallback ----
+let DB=null,UID=null;const LSK='bump_career_v1';
+const storeReady=(async()=>{try{const cl=window.claude;if(!cl||!cl.use)return;const[d,u]=await Promise.all([cl.use('db'),cl.use('user')]);
+ if(d&&u){const id=await u.id();if(id){DB=d;UID=id}}}catch(e){DB=null}})();
+const ref=()=>DB.doc('data/users/'+UID+'/career');
+let saving=false,again=false;
+async function save(){if(!C)return;C.t=Date.now();try{localStorage.setItem(LSK,JSON.stringify(C))}catch(e){}cloudQueue('career');
+ if(!DB)return;if(saving){again=true;return}saving=true;
+ try{await ref().set({json:JSON.stringify(C),t:C.t})}catch(e){if(e&&e.code!=='unavailable')DB=null}
+ saving=false;if(again){again=false;save()}}
+async function load(){let c=null;try{c=JSON.parse(localStorage.getItem(LSK)||'null')}catch(e){}
+ if(DB){try{const sn=await Promise.race([ref().get(),new Promise((_,rj)=>setTimeout(()=>rj(0),9000))]);
+  if(sn&&sn.exists){const d=JSON.parse(sn.data().json);if(!c||(d.t||0)>=(c.t||0))c=d}}catch(e){}}
+ return c&&c.v===1?c:null}
+async function wipe(){try{localStorage.removeItem(LSK)}catch(e){}cloudQueue('career');if(DB){try{await ref().delete()}catch(e){}}}
+
+// ---- weeks ----
+function mkOffer(lv){const s=C.done?3:stageOf(C.week),L=OPPN[s];return{opp:L[R()*L.length|0],lv:clamp(lv,.03,1),mode:STAGE[s].m,to:STAGE[s].to}}
+function weekStart(){const w=C.week;C.chat=0;
+ if(C.done){C.offer=mkOffer(.85+R()*.15);C.say='延長賽季！現在的你，任何對手都能挑戰。';return}
+ const o=OFFICIAL[w];
+ if(o){C.offer=null;C.say=`這週就是「${o.n}」了！對手是${o.opp}，全力以赴吧！`;return}
+ C.say=w===9?'街頭的表現被人注意到了！搭檔「阿哲」邀你一起打雙人賽，從今天開始是 2 對 2。'
+  :w===17?'教練邀請你加入晨光高中排球隊！從現在起是 6 人制，我也正式成為球隊經理了，請多指教！'
+  :MGR[R()*MGR.length|0];
+ const s=stageOf(w),b=s===1?.08+(w-1)/7*.27:s===2?.35+(w-9)/7*.25:.55+(w-17)/11*.25;
+ C.offer=R()<.55?mkOffer(b+(R()-.5)*.12):null;
+ if(C.offer)C.say+=`（我幫你約到一場練習賽，對手是「${C.offer.opp}」。）`}
+function advance(){C.week++;
+ if(!C.done&&C.week>MAXW){save();showCv('ending');return}
+ weekStart();save();showCv('hub')}
+function nextOfficial(){for(let w=C.week;w<=MAXW;w++)if(OFFICIAL[w])return[w,OFFICIAL[w]];return null}
+function prevJump(){if(prev)prev.t=.8}
+
+// ---- screens ----
+const statRows=(st,edit)=>Object.keys(STN).map(k=>{const v=st[k],r=RANK(v);
+ return`<div class="st"><span>${STN[k]}</span><span class="rk" style="background:${RKC[r]}">${r}</span><span class="bar"><i style="width:${v}%;background:${STC[k]}"></i></span><span class="v">${v}</span>`+
+ (edit?`<span class="pm"><button class="sm" data-a="cst:${k},-5" aria-label="${STN[k]}減少">−</button><button class="sm" data-a="cst:${k},5" aria-label="${STN[k]}增加">＋</button></span>`:'<span></span>')+`</div>`}).join('');
+const staBar=s=>`<div class="st"><span>體力</span><span></span><span class="bar"><i style="width:${s}%;background:${s>60?'#4fae5a':s>30?'#f0a800':'#e8443a'}"></i></span><span class="v">${s}</span><span></span></div>`;
+const hx=c=>'#'+c.toString(16).padStart(6,'0'),HAIRC=HAIR.map(hx),SKINC=SKIN.map(hx);
+function screenCreate(){const d=draft,left=150-d.st.spd-d.st.jmp-d.st.pow,L=d.look;
+ const chips=(k,a)=>`<div class="chips cs">${a.map((n,i)=>`<button class="chip${(L[k]||0)===i?' on':''}" data-a="clk:${k},${i}">${n}</button>`).join('')}</div>`;
+ const sws=(k,a,lab)=>`<div class="chips cs">${a.map((c,i)=>`<button class="sw${(L[k]||0)===i?' on':''}" style="background:${c}" data-a="clk:${k},${i}" aria-label="${lab} ${i+1}"></button>`).join('')}</div>`;
+ return`<h3>建立你的排球員</h3>
+ <div class="crow"><b>名字</b><input class="nm" id="nm" maxlength="8" placeholder="最多 8 個字" value="${esc(d.name)}"></div>
+ <div class="crow"><b>髮型</b>${chips('style',HAIRN)}</div>
+ <div class="crow"><b>髮色</b>${sws('hair',HAIRC,'髮色')}</div>
+ <div class="crow"><b>膚色</b>${sws('skin',SKINC,'膚色')}</div>
+ <div class="crow"><b>眼睛</b>${chips('eye',EYEN)}</div>
+ <div class="crow"><b>配件</b>${chips('acc',ACCN)}</div>
+ <div class="crow"><b>服裝</b>${chips('shirt',SHIRTN)}${chips('pants',PANTN)}</div>
+ <div class="crow"><b></b><button class="chip" data-a="crand">隨機外觀</button></div>
+ <div class="lbl">素質（剩 <b style="color:${left?'#e8604a':'#4fae5a'}">${left}</b> 點）　速度＝跑位・跳躍＝高度滯空・力道＝球速</div>${statRows(d.st,true)}
+ <p class="err" id="err"></p>
+ <button class="go" data-a="create">開始生涯！</button>
+ <div class="foot"><button class="lnk" data-a="menu">← 主選單</button></div>`}
+function screenHub(){const c=C,o=OFFICIAL[c.week]&&!c.done?OFFICIAL[c.week]:null,s=c.done?3:stageOf(c.week),nx=nextOfficial(),hurt=c.hurt>0;
+ const act=(a,bg,t,sm,dis)=>`<button class="act" style="background:${bg}" data-a="${a}"${dis?' disabled':''}>${t}<small>${sm}</small></button>`;
+ let acts;
+ if(o)acts=`<button class="act wide" style="background:#ff8a3d" data-a="official">出賽！${o.n}<small>${o.mode} 人制 · ${o.to} 分 · 對手：${o.opp}</small></button>`+
+  `<button class="act wide" style="background:#8a63ff" data-a="mgr">賽前找經理<small>升級素質・學習能力</small></button>`;
+ else acts=act('train:spd',STC.spd,'速度練習','體力 −18',hurt)+act('train:jmp',STC.jmp,'跳躍練習','體力 −18',hurt)+act('train:pow',STC.pow,'力道練習','體力 −18',hurt)+
+  act('rest','#8a93a6',hurt?'養傷休息':'休息','體力 +45')+
+  (c.offer?act('match','#ff8a3d','練習賽','vs '+c.offer.opp,hurt):act('x','#ff8a3d','練習賽','本週沒有',true))+
+  act('mgr','#8a63ff','找經理','升級・能力');
+ return`<div class="hdr"><h3>${esc(c.name)}</h3><span class="tag">${STAGE[s].t}</span></div>
+ <p class="sub">${c.done?`延長賽季 · 第 ${c.week} 週`:`第 ${c.week} / ${MAXW} 週`}${nx&&!c.done&&nx[0]!==c.week?` · 第 ${nx[0]} 週：${nx[1].n}`:''}</p>
+ ${statRows(c.st)}${staBar(c.sta)}
+ <p class="meta">經驗點 <b>${c.exp}</b>　戰績 <b>${c.w}</b> 勝 <b>${c.l}</b> 敗${c.sk.length?'<br>能力：'+c.sk.map(id=>`<span class="tag">${SKILLS.find(x=>x.id===id).n}</span>`).join(''):''}</p>
+ ${c.msg?`<div class="say plain">${esc(c.msg)}</div>`:''}
+ <div class="say"><i>經理 小晴</i>${esc(hurt?'你受傷了，這週先好好休息吧。':c.say)}</div>
+ <div class="acts">${acts}</div>
+ <div class="foot"><button class="lnk" data-a="menu">← 主選單</button><button class="lnk" data-a="reset">${resetArm?'確定刪除存檔？再按一次':'重新開始生涯'}</button></div>`}
+function screenMgr(){const c=C;
+ return`<div class="hdr"><h3>經理 小晴</h3></div><div class="say"><i>小晴</i>${esc(mgrLine)}</div>
+ <p class="meta">經驗點 <b>${c.exp}</b></p>
+ <div class="lbl">素質強化（每次 +2）</div>
+ ${Object.keys(STN).map(k=>{const v=c.st[k],cs=cost(v);return`<div class="shop"><span>${STN[k]} <b>${v}</b> → ${Math.min(99,v+2)}<small>${STD[k]}</small></span><button class="buy" data-a="up:${k}"${c.exp<cs||v>=99?' disabled':''}>${v>=99?'已滿':cs+' 點'}</button></div>`}).join('')}
+ <div class="lbl">特殊能力</div>
+ ${SKILLS.map(s=>{const has=c.sk.includes(s.id);return`<div class="shop"><span>${s.n}<small>${s.d}</small></span><button class="buy" data-a="buy:${s.id}"${has||c.exp<s.c?' disabled':''}>${has?'已習得':s.c+' 點'}</button></div>`}).join('')}
+ <button class="go alt" data-a="chat"${c.chat?' disabled':''}>${c.chat?'這週已經聊過了':'跟小晴聊聊天（每週一次）'}</button>
+ <div class="foot"><button class="lnk" data-a="back">← 回到行程</button></div>`}
+function screenResult(){const r=C.last;
+ return`<h3>${r.win?'勝利！':'落敗……'}</h3><p class="sub">${r.official?r.official+' · ':''}vs ${esc(r.opp)} · ${r.score[0]} : ${r.score[1]}</p>
+ <div class="shop"><span>殺球得分</span><b>${r.st.k}</b></div><div class="shop"><span>攔網得分</span><b>${r.st.b}</b></div><div class="shop"><span>發球 ACE</span><b>${r.st.a}</b></div>
+ <div class="say"><i>小晴</i>${r.win?'太厲害了！':'沒關係，下次一定贏回來！'}獲得經驗點 <b>+${r.g}</b>${r.bonus?'，'+r.bonus:''}。體力 −25。</div>
+ <button class="go" data-a="cont">繼續</button>`}
+function screenEnding(){const c=C,st=c.st,ov=Math.round((st.spd+st.jmp+st.pow)/3),wins=Object.values(c.res).filter(Boolean).length;
+ const title=c.res[28]?'全國冠軍 · 晨光的王牌':wins>=3?'強豪主將':wins>=2?'聯賽主力':wins>=1?'街頭傳說':'努力的排球少年';
+ return`<h3>生涯結算</h3><p class="sub">${esc(c.name)} · 綜合評價 <b style="color:${RKC[RANK(ov)]}">${RANK(ov)}</b></p>
+ <div class="say"><i>稱號</i><b>${title}</b></div>${statRows(st)}
+ <p class="meta">戰績 <b>${c.w}</b> 勝 <b>${c.l}</b> 敗　正式比賽 ${Object.keys(OFFICIAL).map(w=>`${OFFICIAL[w].n} ${c.res[w]===undefined?'—':c.res[w]?'勝':'敗'}`).join('、')}</p>
+ <div class="say"><i>小晴</i>這 28 週辛苦了。從街頭一路打到這裡，我一直都在看著喔。</div>
+ <button class="go" data-a="endcont">繼續打球（延長賽季）</button><button class="go alt" data-a="endnew">開始新的生涯</button>`}
+function fit(card){if(!card||card.offsetParent===null)return;card.style.zoom='';card.style.width='';
+ const ov=card.parentElement,cs=getComputedStyle(ov),avail=ov.clientHeight-parseFloat(cs.paddingTop)-parseFloat(cs.paddingBottom)-2,h=card.offsetHeight;
+ if(h<=avail)return;const w=card.offsetWidth,z=Math.max(.58,avail/h);card.style.width=(w/z)+'px';card.style.zoom=z;
+ const h2=card.offsetHeight;if(h2*z>avail&&z>.58){const z2=Math.max(.58,avail/h2);card.style.width=(w/z2)+'px';card.style.zoom=z2}}
+function fitAll(){['#menu .card','#cvCard','#mvCard'].forEach(q=>fit($(q)))}
+addEventListener('resize',()=>setTimeout(fitAll,50));
+function stopDemo(){if(cfg.demo){clearMatch();cfg.demo=false}}
+function demoStart(){Object.assign(cfg,{mode:6,to:25,diff:'normal',career:null,mgr:null,demo:true});Object.assign(TEAM,TEAM_DEF);setup();players.forEach(p=>p.human=false)}
+function showCv(s){stopDemo();cvScreen=s;resetArm=s==='hub'?resetArm:false;
+ const look=s==='create'?draft.look:C?C.look:null;if(look)buildPrev(look);
+ $('#cvCard').innerHTML=s==='create'?screenCreate():s==='hub'?screenHub():s==='mgr'?screenMgr():s==='result'?screenResult():screenEnding();
+ $('#cv').classList.remove('hide');if(cvScreen!==showCv.last){$('#cv').scrollTop=0;showCv.last=cvScreen}$('#menu').classList.add('hide');$('#over').classList.add('hide');mode='career';fit($('#cvCard'))}
+function buildPrev(look){const key=JSON.stringify(look);if(prev&&prev.key===key)return;if(prev)scene.remove(prev.m.g);
+ const m=makePlayer(0x3d7bff,look,7);scene.add(m.g);prev={m,key,t:0}}
+function dropPrev(){if(prev){scene.remove(prev.m.g);prev=null}}
+function clearMatch(){players.forEach(p=>scene.remove(p.m.g));players=[];H=null;nameTag.visible=false;$('#msg').style.opacity=0;$('#cue').style.opacity=0}
+
+// ---- matches ----
+function playMatch(o,official){pend={...o,official};initAudio();
+ const tl=o.mode===6?(C.done?.8:clamp(.5+(C.week-17)/11*.25,.5,.8)):.5;
+ Object.assign(TEAM,preset(tl));DIFF.career=preset(o.lv);
+ Object.assign(cfg,{mode:o.mode,to:o.to,diff:'career',mgr:null,demo:false,career:{name:C.name,look:C.look,st:C.st,sk:C.sk,opp:o.opp,tired:C.sta<30}});
+ dropPrev();$('#cv').classList.add('hide');setup();mode='game'}
+function careerEnd(w){const m=pend,st=S.stats,win=w===0;
+ let g=15+(win?25:8)+st.k*4+st.b*5+st.a*4;if(m.official)g*=2;g=Math.round(g);
+ C.exp+=g;C.sta=Math.max(0,C.sta-25);if(win)C.w++;else C.l++;
+ let bonus='';if(win){const k=['spd','jmp','pow'][R()*3|0];C.st[k]=Math.min(99,C.st[k]+1);bonus=`實戰經驗：${STN[k]} +1`}
+ if(m.official)C.res[C.week]=win;
+ C.last={win,score:S.score.slice(),st:{...st},g,bonus,opp:m.opp,official:m.official?m.n:''};C.offer=null;C.msg='';
+ clearMatch();save();showCv('result')}
+
+// ---- actions ----
+const ACT={
+ cstyle:i=>{draft.look.style=+i;showCv('create')},clk:a=>{const[k,v]=a.split(',');draft.look[k]=+v;showCv('create')},crand:()=>{draft.look={...randLook(),h:1};showCv('create')},chair:i=>{draft.look.hair=+i;showCv('create')},cskin:i=>{draft.look.skin=+i;showCv('create')},
+ cst:a=>{const[k,d]=a.split(','),v=draft.st[k]+ +d,left=150-draft.st.spd-draft.st.jmp-draft.st.pow;if(v<30||v>70||(+d>0&&left<+d))return;draft.st[k]=v;showCv('create')},
+ create:()=>{const n=draft.name.trim();if(!n){$('#err').textContent='請先幫你的排球員取個名字。';return}
+  const left=150-draft.st.spd-draft.st.jmp-draft.st.pow;
+  C={v:1,name:n,look:{...draft.look},st:{...draft.st},exp:20+left*2,sta:100,week:1,sk:[],w:0,l:0,res:{},hurt:0,chat:0,done:false,
+   msg:left?`未分配的 ${left} 點已換成經驗點 +${left*2}。`:'',say:''};
+  weekStart();C.say='我是小晴，從今天起當你的經理！先從街頭的 1 對 1 開始，一步步變強吧。';save();showCv('hub')},
+ train:k=>{if(C.hurt)return;const tired=C.sta<25,big=!tired&&R()<.15;let g=Math.round(12+R()*6);if(tired)g=Math.round(g/2);if(big)g=Math.round(g*1.5);
+  C.sta=Math.max(0,C.sta-18);
+  if(tired&&R()<.3){C.hurt=2;C.msg='練習中扭到腳了……接下來要休息兩週。'}
+  else{const add=big?3:1;C.st[k]=Math.min(99,C.st[k]+add);C.exp+=g;C.msg=`${big?'大成功！':''}${STN[k]}練習：${STN[k]} +${add}、經驗點 +${g}${tired?'（體力不足，效果減半）':''}`}
+  prevJump();advance()},
+ rest:()=>{C.sta=Math.min(100,C.sta+45);if(C.hurt)C.hurt--;C.msg='好好休息了一週，體力 +45。';advance()},
+ match:()=>{if(C.offer&&!C.hurt)playMatch(C.offer,false)},
+ official:()=>{const o=OFFICIAL[C.week];if(o)playMatch(o,true)},
+ mgr:()=>{mgrLine=MGR[R()*MGR.length|0];showCv('mgr')},back:()=>showCv('hub'),
+ up:k=>{const v=C.st[k],cs=cost(v);if(C.exp<cs||v>=99)return;C.exp-=cs;C.st[k]=Math.min(99,v+2);mgrLine=`${STN[k]}提升到 ${C.st[k]} 了！感覺變強了吧？`;prevJump();save();showCv('mgr')},
+ buy:id=>{const s=SKILLS.find(x=>x.id===id);if(!s||C.sk.includes(id)||C.exp<s.c)return;C.exp-=s.c;C.sk.push(id);mgrLine=`你學會了「${s.n}」！比賽時試試看吧。`;prevJump();save();showCv('mgr')},
+ chat:()=>{if(C.chat)return;C.chat=1;const r=R();
+  if(r<.4){C.sta=Math.min(100,C.sta+15);mgrLine='我做了便當喔，多吃一點！（體力 +15）'}
+  else if(r<.75){C.exp+=10;mgrLine='我整理了對手的資料，一起研究吧。（經驗點 +10）'}
+  else{const k=['spd','jmp','pow'][R()*3|0];C.st[k]=Math.min(99,C.st[k]+1);mgrLine=`我發現你${STN[k]}還能更好，教你一個小訣竅！（${STN[k]} +1）`}
+  save();showCv('mgr')},
+ cont:advance,
+ reset:async()=>{if(!resetArm){resetArm=true;showCv('hub');return}resetArm=false;await wipe();C=null;draft=newDraft();showCv('create')},
+ endcont:()=>{C.done=true;C.week++;weekStart();C.msg='';save();showCv('hub')},
+ endnew:async()=>{await wipe();C=null;draft=newDraft();showCv('create')},
+ menu:()=>{dropPrev();$('#cv').classList.add('hide');toMenu()}};
+$('#cvCard').addEventListener('click',e=>{const b=e.target.closest('[data-a]');if(!b||b.disabled)return;const[a,...r]=b.dataset.a.split(':');if(ACT[a])ACT[a](r.join(':'))});
+$('#cvCard').addEventListener('input',e=>{if(e.target.id==='nm')draft.name=e.target.value});
+async function openCareer(){const b=$('#careerBtn');b.disabled=true;b.firstChild.textContent='讀取存檔中…';
+ await Promise.race([waitSync(),new Promise(r=>setTimeout(r,10000))]);C=await load();b.disabled=false;b.firstChild.textContent='生涯模式';
+ if(C){C.msg=C.msg||'';showCv(C.week>MAXW&&!C.done?'ending':'hub')}else{draft=newDraft();showCv('create')}}
+
+/* ---------- menu ---------- */
+const ent={mode:6,diff:'hard',to:25};
+document.querySelectorAll('.seg').forEach(seg=>seg.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
+ seg.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b));const k=seg.dataset.k;ent[k]=k==='diff'?b.dataset.v:+b.dataset.v}));
+function initAudio(){try{if(!ac){ac=new(window.AudioContext||window.webkitAudioContext)();noiseBuf=ac.createBuffer(1,ac.sampleRate*2,ac.sampleRate);const d=noiseBuf.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=R()*2-1}ac.resume()}catch(e){}}
+function start(){initAudio();Object.assign(cfg,ent,{career:null,mgr:null,demo:false});Object.assign(TEAM,TEAM_DEF);dropPrev();
+ setup();mode='game';$('#menu').classList.add('hide');$('#over').classList.add('hide')}
+function showMain(m){$('#mainPanel').classList.toggle('off',!m);$('#entPanel').classList.toggle('off',m);fit($('#menu .card'))}
+$('#entBtn').onclick=()=>showMain(false);$('#entBack').onclick=()=>showMain(true);$('#menu details').addEventListener('toggle',()=>fit($('#menu .card')));
+$('#startBtn').onclick=start;$('#againBtn').onclick=start;$('#careerBtn').onclick=openCareer;
+function toMenu(){clearMatch();cfg.mgr=null;mode='menu';mDrop();$('#over').classList.add('hide');$('#cv').classList.add('hide');$('#mv').classList.add('hide');$('#menu').classList.remove('hide');showMain(true);demoStart()}
+$('#toMenu').onclick=toMenu;
+$('#menuBtn').onclick=()=>{if(mode==='game'&&cfg.career){clearMatch();C.msg='比賽中途離開了，這場不算。';showCv('hub')}else toMenu()};
+/* ---------- manager mode (club management, after GBA Calcio Bit) ---------- */
+const MK='bump_mgr_v1';
+const SURN='林陳張李王吳劉蔡楊許鄭謝郭洪曾周黃賴徐葉'.split('');
+const GIVN=['志豪','俊傑','冠宇','承恩','宇翔','家豪','柏翰','品睿','子軒','彥廷','建宏','哲瑋','宗翰','育誠','奕辰','睿恩','皓宇','昱廷','聖傑','翊凱','嘉宏','明哲','書豪','振宇'];
+const POSN={S:'舉球',OH:'主攻',MB:'副攻',OP:'接應'};
+const ATTR=[['atk','攻擊'],['def','防守'],['set','舉球'],['srv','發球'],['spd','速度'],['jmp','跳躍']];
+const CLUBC=[0x3d7bff,0xff5d8f,0x22c3a6,0xff8a3d,0x8a63ff,0xe8443a],CLUBCH=['#3d7bff','#ff5d8f','#22c3a6','#ff8a3d','#8a63ff','#e8443a'];
+const DIVS=[{n:'世界盃',s:'世界盃',lo:74,hi:92,sp:60,prize:500},{n:'超級聯賽',s:'超級',lo:58,hi:76,sp:40,prize:300},{n:'甲級聯賽',s:'甲級',lo:46,hi:62,sp:26,prize:180},
+ {n:'乙級聯賽',s:'乙級',lo:36,hi:50,sp:18,prize:110},{n:'區域聯賽',s:'區域',lo:26,hi:40,sp:12,prize:70}];
+const BOTTOM=DIVS.length-1;
+const DIVT=[['極光王國','赤焰帝國','冰川聯邦','沙漠之鷹','星海共和','雷神島'],['天鷹學園','王者企業','雷霆排球會','極光體育','鳳凰電力','帝國大學'],
+ ['港都銀行','山城隊','東門鐵人','南風商工','北辰大學','西港工業'],['青峰高中','白浪漁會','紅磚倉庫','綠野農會','銀河電子','黑熊工程'],
+ ['公園排球會','夜市聯隊','巷口少年','晨跑俱樂部','海風隊','河堤隊']];
+const ARENA=[0,500,1200,3000,6000,12000],ARC=[0,0,200,500,1200,2500],GYMC=[0,0,150,400,900,2000],REC=[0,8,12,16,21,26],FOODC=[0,0,120,300,700,1500];
+const TACN={bal:'均衡',pow:'強攻',quick:'快攻',def:'穩守',serve:'發球攻勢'};
+const TACD={bal:'沒有特別偏重。',pow:'扣球更重、少吊球，但失誤略增。',quick:'舉球更低更快，對手攔網較難跟上。',def:'防守與接扣成功率提高，扣球力道稍降。',serve:'發球更強，對手難接，但發球失誤增加。'};
+const TRN={atk:'攻擊',def:'防守',set:'舉球',srv:'發球',phy:'體能',rest:'休養'};
+const LPOS=['OH','S','MB','OP','OH','MB'];
+let mLg=null,mAv='tbl',MG=null,mScreen='',mTab='roster',mSel=null,mPrev=[],mPend=null,mSpP=null,mSpA='atk',mResetArm=false,MUTE=false;
+const mid=()=>Math.random().toString(36).slice(2,9);
+const r0=v=>Math.round(v);
+const ovr=p=>r0(p.pos==='S'?(p.set*2+p.def+p.srv+p.spd+p.jmp)/6:(p.atk*1.5+p.def+p.srv*.5+p.spd+p.jmp)/5);
+const ss0=()=>({k:0,b:0,a:0}),ptsOf=p=>p.ss?p.ss.k+p.ss.b+p.ss.a:0;
+function freeNum(){const used=new Set((MG?MG.roster:[]).map(p=>p.num));const pref=[...Array(20)].map((_,i)=>i+1).filter(n=>!used.has(n));
+ if(pref.length)return pref[R()*pref.length|0];for(let n=21;n<100;n++)if(!used.has(n))return n;return 0}
+function ensureNums(){const seen=new Set();for(const p of MG.roster){if(p.num==null||seen.has(p.num))p.num=null;else seen.add(p.num)}for(const p of MG.roster)if(p.num==null)p.num=freeNum()}
+function genPlayer(lo,hi,pos,age){const b=lo+R()*(hi-lo),r=()=>clamp(b+(R()-.5)*16,15,99);
+ const p={id:mid(),name:SURN[R()*SURN.length|0]+GIVN[R()*GIVN.length|0],pos:pos||['OH','OH','MB','MB','OP','S'][R()*6|0],age:age||17+(R()*14|0),
+  atk:r(),def:r(),set:r(),srv:r(),spd:r(),jmp:r(),cond:100,inj:0,ss:ss0(),look:randLook()};
+ if(p.pos==='S'){p.set=clamp(p.set+14,15,99);p.atk=clamp(p.atk-8,15,99)}
+ if(p.pos==='MB')p.jmp=clamp(p.jmp+8,15,99);
+ if(p.pos==='OH'||p.pos==='OP')p.atk=clamp(p.atk+6,15,99);
+ p.pot=clamp(r0(ovr(p)+5+R()*(p.age<21?30:p.age<26?18:6)),30,99);return p}
+// A/B-rank players are rare on the market and cost more
+function marketPlayer(lo,hi,pos,age){let p=genPlayer(lo,hi,pos,age);
+ for(let i=0;i<5;i++){const r=RANK(ovr(p));if((r==='S'||r==='A')&&R()<.85||r==='B'&&R()<.6)p=genPlayer(lo,Math.max(lo+2,Math.min(hi,lo+(hi-lo)*.55,66)),pos,age);else break}return p}
+const salary=p=>Math.max(1,r0(ovr(p)**2/900));
+const rkMul=p=>{const r=RANK(ovr(p));return r==='S'||r==='A'?1.6:r==='B'?1.3:1};
+const price=p=>r0(ovr(p)**2/12*(p.age<22?1.3:p.age>29?.7:1)*(p.pot>80?1.2:1)*rkMul(p));
+const byId=id=>MG.roster.find(p=>p.id===id);
+const healthy=()=>MG.roster.filter(p=>!(p.inj>0));
+function teamStr(){const ps=MG.lineup.map(byId).filter(Boolean);return ps.length?r0(ps.reduce((s,p)=>s+ovr(p),0)/ps.length):0}
+const teamOvr=t=>t.roster?r0(t.roster.reduce((s,p)=>s+ovr(p),0)/t.roster.length):t.str;
+function autoLineup(){const pool=healthy().length>=6?healthy():MG.roster;
+ const st=[...pool].sort((a,b)=>(b.pos==='S')-(a.pos==='S')||b.set-a.set)[0];
+ const o=pool.filter(p=>p!==st).sort((a,b)=>ovr(b)-ovr(a)).slice(0,5);MG.lineup=[o[0].id,st.id,...o.slice(1).map(p=>p.id)]}
+function prepLineup(){const subs=[];MG.lineup.forEach((id,i)=>{const p=byId(id);if(!p||!(p.inj>0))return;
+ const b=healthy().filter(x=>!MG.lineup.includes(x.id)).sort((a,c)=>i===1?c.set-a.set:ovr(c)-ovr(a))[0];if(b){MG.lineup[i]=b.id;subs.push(`${p.name}→${b.name}`)}});return subs}
+function rr(n){const a=[...Array(n).keys()],rs=[];for(let r=0;r<n-1;r++){const m=[];for(let i=0;i<n/2;i++){const x=a[i],y=a[n-1-i];m.push(r%2?[y,x]:[x,y])}rs.push(m);a.splice(1,0,a.pop())}
+ return rs.concat(rs.map(m=>m.map(([x,y])=>[y,x])))}
+function genRoster(s){const used=new Set();return LPOS.map(ps=>{const p=genPlayer(s-4,s+4,ps,19+(R()*12|0));let n;do n=1+(R()*20|0);while(used.has(n));used.add(n);p.num=n;return p})}
+function genTeam(d,k,name){const D=DIVS[d],s=D.lo+R()*(D.hi-D.lo),t={id:'t'+d+k+mid(),name,color:CLUBC[(k+d*2+1)%6],w:0,l:0,pts:0,pf:0,pa:0,roster:genRoster(s)};t.str=teamOvr(t);return t}
+function genLeague(d){return DIVT[d].map((n,k)=>genTeam(d,k,n))}
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=R()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]]}return a}
+function newSeason(fresh){MG.lg.forEach((L,d)=>{const D=DIVS[d];L.forEach(t=>{Object.assign(t,{w:0,l:0,pts:0,pf:0,pa:0});
+  if(t.id===0){t.name=MG.name;return}
+  t.roster.forEach(p=>{p.ss=ss0();if(fresh)return;p.age++;const g=(p.age<24?1.2:p.age>30?-1.4:.2);ATTR.forEach(([k])=>p[k]=clamp(p[k]+(R()-.45)*3+g,15,99));
+   if(p.age>34){Object.assign(p,genPlayer(t.str-6,t.str+2,p.pos,19+(R()*4|0)),{num:p.num})}});
+  const o=teamOvr(t);if(o<D.lo-6||o>D.hi+6){const f=(clamp(o,D.lo-6,D.hi+6))/o;t.roster.forEach(p=>ATTR.forEach(([k])=>p[k]=clamp(p[k]*f,15,99)))}t.str=teamOvr(t)});shuffle(L)});
+ MG.roster.forEach(p=>p.ss=ss0());MG.sched=rr(6);MG.week=1;MG.market=genMarket();MG.friendly=null;MG.spDone=0}
+const ourL=()=>MG.lg[MG.div],ourIdx=()=>ourL().findIndex(t=>t.id===0),usT=()=>ourL()[ourIdx()];
+function wpick(ps,f){const ws=ps.map(f),s=ws.reduce((a,b)=>a+b,0);let r=R()*s;for(let i=0;i<ps.length;i++){r-=ws[i];if(r<=0)return ps[i]}return ps[ps.length-1]}
+function addPts(t,n){if(!t.roster)return;const ps=t.roster;for(let i=0;i<n;i++){const r=R();
+ if(r<.6)wpick(ps,p=>p.atk**2*(p.pos==='S'?.25:1)).ss.k++;else if(r<.75)wpick(ps,p=>p.jmp*(p.pos==='MB'?2:1)).ss.b++;else if(r<.83)wpick(ps,p=>p.srv**2).ss.a++}}
+function simPair(a,b){const pa=1/(1+Math.exp(-((a.str||teamStr())-(b.str||teamStr()))/7)),aw=R()<pa,lp=Math.max(10,25-2-(R()*12|0)),W=aw?a:b,L=aw?b:a;
+ W.w++;W.pts+=3;L.l++;W.pf+=25;W.pa+=lp;L.pf+=lp;L.pa+=25;addPts(W,25);addPts(L,lp)}
+function genMarket(){const d=DIVS[MG.div],a=[];for(let i=0;i<4;i++)a.push(marketPlayer(d.lo-6,d.hi+2));a.push(marketPlayer(d.lo-10,d.lo,null,17+(R()*3|0)));return a}
+function mkFriendly(){const ts=teamStr(),pool=MG.lg.filter((L,d)=>d!==MG.div).flat(),near=pool.filter(t=>Math.abs(t.str-ts)<14),arr=near.length?near:pool,t=arr[R()*arr.length|0];return{id:t.id,name:t.name,str:t.str,color:t.color}}
+function ourMatch(){const i=ourIdx(),m=MG.sched[MG.week-1].find(x=>x.includes(i)),home=m[0]===i;return{home,opp:ourL()[home?m[1]:m[0]]}}
+function standings(d=MG.div){return[...MG.lg[d]].sort((a,b)=>b.pts-a.pts||(b.pf-b.pa)-(a.pf-a.pa))}
+const rankOf=id=>standings().findIndex(t=>t.id===id)+1;
+const findTeam=id=>MG.lg.flat().find(t=>t.id===id);
+function leaders(d){const out=[];MG.lg[d].forEach(t=>(t.id===0?MG.roster:t.roster).forEach(p=>out.push({p,t:t.id===0?MG.name:t.name,us:t.id===0})));return out.sort((a,b)=>ptsOf(b.p)-ptsOf(a.p)).slice(0,10)}
+function stars(){const out=[];MG.lg.forEach((L,d)=>L.forEach(t=>(t.id===0?MG.roster:t.roster).forEach(p=>out.push({p,t:t.id===0?MG.name:t.name,d,us:t.id===0}))));return out.sort((a,b)=>ovr(b.p)-ovr(a.p)||ptsOf(b.p)-ptsOf(a.p)).slice(0,10)}
+function msave(){MG.t=Date.now();try{localStorage.setItem(MK,JSON.stringify(MG))}catch(e){}cloudQueue('mgr')}
+function mload(){try{const m=JSON.parse(localStorage.getItem(MK)||'null');if(!m||m.v!==1)return null;const sv=MG;MG=m;
+ if(!m.lg){const L=[0,1,2].map(d=>genLeague([1,2,4][d]));L[m.div]=m.teams.map(t=>({...t,id:t.id===0?0:'old'+t.id}));m.lg=L;delete m.teams}
+ if(m.lg.length===3){const map=[1,2,4];m.lg=[genLeague(0),m.lg[0],m.lg[1],genLeague(3),m.lg[2]];m.div=map[m.div];(m.hist||[]).forEach(h=>h.d=map[h.d]);delete m.sres}
+ m.lg.forEach(L=>L.forEach(t=>{if(t.id!==0&&!t.roster){t.roster=genRoster(t.str||40);t.str=teamOvr(t)}(t.roster||[]).forEach(p=>{p.ss=p.ss||ss0();p.look={...randLook(),...p.look}})}));
+ m.fac.food=m.fac.food||1;m.titles=m.titles||[];
+ [...m.roster,...(m.market||[])].forEach(p=>{p.look={...randLook(),...p.look};p.ss=p.ss||ss0();p.inj=p.inj||0});ensureNums();MG=sv;return m}catch(e){return null}}
+function mwipe(){try{localStorage.removeItem(MK)}catch(e){}cloudQueue('mgr')}
+function newClub(name,color){MG={v:1,name,color,money:300,fans:200,season:1,div:BOTTOM,fac:{arena:1,gym:1,food:1},tac:'bal',train:'atk',roster:[],lineup:[],trophies:0,titles:[],hist:[],msg:''};
+ ['S','S','OH','OH','OH','MB','MB','OP','OP'].forEach(ps=>MG.roster.push(genPlayer(30,42,ps)));
+ MG.lg=DIVS.map((_,d)=>genLeague(d));MG.lg[BOTTOM][5]={id:0,name,w:0,l:0,pts:0,pf:0,pa:0};ensureNums();autoLineup();newSeason(true);
+ MG.msg='球隊成立了！目標：從區域聯賽一路打進世界盃並奪冠。'}
+
+// ---- engine params from player attributes (stamina scales every attribute) ----
+function aiFrom(p0,tac){const f=.7+.3*clamp(p0.cond,0,100)/100,p={};for(const[k]of ATTR)p[k]=p0[k]*f;
+ const a={spd:5+p.spd*.04,react:clamp(.3-p.def*.0028,.03,.3),skill:clamp(1.6-p.def*.012,.45,1.6),noise:clamp(1.6-p.atk*.014,.25,1.6),pick:1+r0(p.atk/15),
+  block:clamp((p.jmp+p.def)/2*.011-.1,0,.95),tip:.12,sf:clamp(.16-p.srv*.0013,.03,.16),sv:4.6-p.srv*.015,dig:.1+p.def*.005,set:p.set,big:false};
+ let pow=p.atk;
+ if(tac==='pow'){pow+=8;a.tip*=.5;a.noise*=1.1}if(tac==='def'){a.dig+=.08;a.noise*=.8;pow-=5}if(tac==='serve'){a.sv-=.4;a.sf+=.04;a.big=true}
+ return{a,pow,jv:6.4+p.jmp*.02}}
+function applyTac(t){for(const p of team(t))if(p.data){const r=aiFrom(p.data,cfg.mgr.tac[t]);p.ai=r.a;p.pow=r.pow;p.jv=r.jv}}
+function teamDig(t){const ps=team(t).filter(p=>p.ai);return ps.length?ps.reduce((s,p)=>s+p.ai.dig,0)/ps.length:(t===0?TEAM:DIFF[cfg.diff]).dig}
+function mgrFatigue(){for(const p of players){if(!p.data)continue;p.data.cond=Math.max(5,p.data.cond-(.45+(S.last===p?.35:0)+(p.y>0?.1:0)))}applyTac(0);applyTac(1);updStam()}
+function updStam(){if(!cfg.mgr){$('#mgst').innerHTML='';return}
+ $('#mgst').innerHTML=team(0).map(p=>{const c=r0(p.data.cond);return`<div><em>${p.data.num??''}</em><span>${esc(p.data.name)}</span><i style="width:${c}%;background:${c>60?'#4fae5a':c>35?'#f0a800':'#e8443a'}"></i></div>`}).join('')}
+function smallTag(t){const c=document.createElement('canvas');c.width=192;c.height=48;const g=c.getContext('2d');g.fillStyle='rgba(29,36,51,.78)';g.beginPath();if(g.roundRect)g.roundRect(4,4,184,40,20);else g.rect(4,4,184,40);g.fill();
+ g.fillStyle='#fff';g.font=font(26);g.textAlign='center';g.textBaseline='middle';g.fillText(t,96,26);
+ const s=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(c),depthTest:false,transparent:true}));s.scale.set(1.1,.28,1);s.position.y=2.15;s.renderOrder=8;return s}
+
+// ---- matches ----
+function startMgrMatch(o,home,fr,watch){if(MG.lineup.length<6)return;initAudio();
+ const subs=prepLineup();
+ const hp=MG.lineup.map(byId).map(p=>({...p})),ot=findTeam(o.id);
+ const away=ot&&ot.roster?ot.roster.map(p=>({...p,cond:100})):LPOS.map(ps=>genPlayer(o.str-4,o.str+4,ps,20+(R()*10|0)));
+ let acol=o.color??CLUBC[(MG.color+3)%6];if(acol===CLUBC[MG.color])acol=CLUBC[(MG.color+2)%6];
+ mPend={opp:o,home,fr,ids:[...MG.lineup],subs};
+ Object.assign(cfg,{mode:6,to:fr?15:25,career:null,demo:false,mgr:{home:hp,away,homeC:CLUBC[MG.color],awayC:acol,tac:[MG.tac,['bal','pow','def','quick'][R()*4|0]],speed:1,opp:o.name,club:MG.name}});
+ mDrop();$('#mv').classList.add('hide');setup();mode='game';updStam();
+ if(subs.length)setTimeout(()=>msg('傷兵替補：'+subs.join('、'),2),200);
+ document.querySelectorAll('#mgrbar [data-s]').forEach(b=>b.classList.toggle('on',b.dataset.s==='1'));$('#tacBtn').textContent='戰術：'+TACN[MG.tac];
+ if(!watch)simToEnd()}
+function simToEnd(){MUTE=true;let g=0;while(mode==='game'&&S.state!=='over'&&g++<300000)update(1/60);MUTE=false}
+function mgrEnd(w){const m=mPend,win=w===0,sc=S.score.slice(),ps=S.ps||{};
+ const fin=new Map(players.filter(p=>p.team===0&&p.data).map(p=>[p.data.id,p.data.cond]));
+ clearMatch();cfg.mgr=null;updStam();
+ let mvp=null,best=-1;for(const id of m.ids){const s=ps[id],p=byId(id);if(s&&p){const v=s.k+s.b+s.a;if(v>best){best=v;mvp=p}}}
+ let drain=0;const inj=[];
+ MG.roster.forEach(p=>{if(!fin.has(p.id))return;drain+=p.cond-fin.get(p.id);p.cond=r0(fin.get(p.id));
+  if(R()<.025+(p.cond<40?.06:0)+(p.cond<25?.08:0)){p.inj=1+(R()*3|0);p.injFresh=1;inj.push(`${p.name}（${p.inj} 週）`)}});
+ drain=r0(drain/Math.max(1,fin.size));
+ const gate=m.home?r0(Math.min(MG.fans,ARENA[MG.fac.arena])*.03*(m.fr?.5:1)):0;
+ const fd=r0((win?40+12*(BOTTOM-MG.div):-12)*(m.fr?.5:1));MG.fans=Math.max(50,MG.fans+fd);MG.money+=gate+(m.fr?10:0);
+ if(!m.fr){const L=ourL(),oi=ourIdx(),us=L[oi],op=L.find(t=>t.id===m.opp.id);
+  for(const[id,s]of Object.entries(ps)){const p=byId(id)||(op&&op.roster||[]).find(x=>x.id===id);if(p){p.ss=p.ss||ss0();p.ss.k+=s.k;p.ss.b+=s.b;p.ss.a+=s.a}}
+  us.pf+=sc[0];us.pa+=sc[1];op.pf+=sc[1];op.pa+=sc[0];if(win){us.w++;us.pts+=3;op.l++}else{us.l++;op.w++;op.pts+=3}
+  MG.lg.forEach((Lg,d)=>{for(const[x,y]of MG.sched[MG.week-1]){if(d===MG.div&&(x===oi||y===oi))continue;simPair(Lg[x],Lg[y])}})}
+ else MG.friendly=null;
+ MG.last={win,sc,opp:m.opp.name,mvp:mvp?mvp.name:'',ps,ids:m.ids,gate,fd,fr:m.fr,drain,inj,subs:m.subs};
+ msave();showM('mresult')}
+function weekEnd(){const gf=1+.25*(MG.fac.gym-1),menu=MG.train,rec=REC[MG.fac.food]+(menu==='rest'?20:0);
+ const tg=menu==='atk'?['atk','jmp']:menu==='def'?['def']:menu==='set'?['set']:menu==='srv'?['srv']:menu==='phy'?['spd','jmp']:[];
+ let grown=0;const healed=[],hurt=[];
+ for(const p of MG.roster){const af=p.age<22?1.3:p.age<27?1:p.age<31?.7:.4,o0=ovr(p);
+  if(p.inj>0&&!p.injFresh){p.inj--;if(!p.inj)healed.push(p.name)}p.injFresh=0;
+  if(!(p.inj>0)&&o0<p.pot)tg.forEach(k=>{p[k]=Math.min(99,p[k]+(.5+R()*.9)*af*gf*1.4/tg.length)});
+  p.cond=Math.min(100,p.cond+rec);
+  if(menu!=='rest'&&!(p.inj>0)&&R()<.006+(p.cond<40?.01:0)){p.inj=1;hurt.push(p.name)}
+  if(ovr(p)>o0)grown++}
+ const sal=MG.roster.reduce((s,p)=>s+salary(p),0),sp=DIVS[MG.div].sp;MG.money+=sp-sal;
+ MG.msg=`本週收支：贊助 +${sp} 萬、薪水 −${sal} 萬${MG.last&&MG.last.gate?`、門票 +${MG.last.gate} 萬`:''}。全隊體力 +${rec}。${menu==='rest'?'':`${TRN[menu]}訓練：${grown} 人成長。`}`+
+  (healed.length?` ${healed.join('、')} 傷癒歸隊。`:'')+(hurt.length?` ${hurt.join('、')} 練習中受傷（1 週）。`:'')+(MG.money<0?' 資金是負的，小心經營！':'');
+ MG.week++;MG.spDone=0;if(MG.week%2===1)MG.market=genMarket();MG.friendly=R()<.35?mkFriendly():MG.friendly;
+ if(MG.week>10){seasonEnd();return}msave();showM('mhub')}
+function seasonEnd(){const st=standings(),rk=st.findIndex(t=>t.id===0)+1,d0=MG.div,mult=[1,.6,.4,.25,.2,.2][rk-1],prize=r0(DIVS[d0].prize*mult);
+ const SS=DIVS.map((_,d)=>standings(d)),moves=[],lead=leaders(d0)[0],star=stars().slice(0,3);
+ for(let d=0;d<BOTTOM;d++){const dn=SS[d][5],up=SS[d+1][0];MG.lg[d]=MG.lg[d].filter(t=>t!==dn).concat(up);MG.lg[d+1]=MG.lg[d+1].filter(t=>t!==up).concat(dn);moves.push(`${up.name} 升上${DIVS[d].s}、${dn.name} 降到${DIVS[d+1].s}`)}
+ const champs=SS.map((x,d)=>`${DIVS[d].s}冠軍：${x[0].id===0?MG.name:x[0].name}`);
+ const d1=MG.lg.findIndex(L=>L.some(t=>t.id===0)),champ=rk===1&&d0===0;if(champ)MG.trophies++;if(rk===1)MG.titles.push(`第 ${MG.season} 季 ${DIVS[d0].n}冠軍`);
+ MG.money+=prize;const ret=[];
+ MG.roster.forEach(p=>{p.age++;if(p.age>30)ATTR.forEach(([k])=>p[k]=Math.max(15,p[k]-(1+R()*1.5)));p.cond=100});
+ MG.roster=MG.roster.filter(p=>{if(p.age>=35&&MG.roster.length-ret.length>7){ret.push(p.name);return false}return true});
+ MG.lineup=MG.lineup.filter(id=>byId(id));if(MG.lineup.length<6)autoLineup();
+ MG.hist.push({s:MG.season,d:d0,rk});
+ MG.sres={rk,d0,d1,prize,ret,champ,news:champs.concat(moves),king:lead?`${lead.p.name}（${lead.t}）${ptsOf(lead.p)} 分`:'',
+  star:star.map(x=>`${x.p.name}（${x.t}）${RANK(ovr(x.p))}`),table:st.map(t=>({n:t.id===0?MG.name:t.name,w:t.w,l:t.l,pts:t.pts,us:t.id===0}))};
+ MG.div=d1;MG.season++;newSeason();MG.msg='';msave();showM('mseason')}
+
+// ---- lineup helpers ----
+function setStarter(id){const p=byId(id);if(MG.lineup.includes(id)||p.inj>0)return;const nonS=MG.lineup.filter((x,i)=>i!==1).map(byId).sort((a,b)=>(b.inj>0)-(a.inj>0)||ovr(a)-ovr(b))[0];
+ MG.lineup[MG.lineup.indexOf(nonS.id)]=id}
+function benchIt(id){const i=MG.lineup.indexOf(id);if(i<0)return;const bench=healthy().filter(p=>!MG.lineup.includes(p.id)).sort((a,b)=>(i===1?b.set-a.set:ovr(b)-ovr(a)));if(!bench.length)return;MG.lineup[i]=bench[0].id}
+function makeSetter(id){const p=byId(id);if(p.inj>0)return;const i=MG.lineup.indexOf(id);if(i===1)return;if(i>=0){[MG.lineup[1],MG.lineup[i]]=[MG.lineup[i],MG.lineup[1]]}else MG.lineup[1]=id}
+
+// ---- screens ----
+const condC=c=>c>60?'#4fae5a':c>35?'#f0a800':'#e8443a';
+const kpi=()=>{const ts=teamStr();return`<div class="kpi"><div><small>資金</small><b style="color:${MG.money<0?'#e8443a':'inherit'}">${MG.money} 萬</b></div><div><small>球迷</small><b>${MG.fans}</b></div><div><small>隊伍實力</small><b style="color:${RKC[RANK(ts)]}">${RANK(ts)} ${ts}</b></div></div>`};
+const attrRows=p=>ATTR.map(([k,n])=>{const v=r0(p[k]);return`<div class="st"><span>${n}</span><span class="rk" style="background:${RKC[RANK(v)]}">${RANK(v)}</span><span class="bar"><i style="width:${v}%;background:#1f9e92"></i></span><span class="v">${v}</span><span></span></div>`}).join('');
+const rkB=v=>`<span class="rk mini" style="background:${RKC[RANK(v)]}">${RANK(v)}</span>`;
+function mCreate(){return`<h3>成立你的排球俱樂部</h3><p class="sub">區域 → 乙級 → 甲級 → 超級 → 世界盃，一路打上世界頂點。</p>
+ <div class="lbl">球隊名稱</div><input class="nm" id="cn" maxlength="8" placeholder="例如：晨光排球會" value="${esc(mCreate.n||'')}">
+ <div class="lbl">隊服顏色</div><div class="chips">${CLUBCH.map((c,i)=>`<button class="sw${(mCreate.c||0)===i?' on':''}" style="background:${c}" data-m="ccol:${i}" aria-label="顏色 ${i+1}"></button>`).join('')}</div>
+ <p class="note">開局有 9 名隨機球員、300 萬資金。一季 10 輪，每個聯賽第 1 名升級、最後一名降級。體力會影響球員表現，過度疲勞容易受傷。</p>
+ <p class="err" id="merr"></p><button class="go" data-m="mcreate">成立球隊！</button>
+ <div class="foot"><button class="lnk" data-m="menu">← 主選單</button></div>`}
+function mHub(){const nm=ourMatch(),o=nm.opp,f=MG.friendly,hurt=MG.lineup.map(byId).filter(p=>p&&p.inj>0),tired=MG.lineup.map(byId).filter(p=>p&&p.cond<50&&!(p.inj>0));
+ return`<div class="hdr"><h3>${esc(MG.name)}</h3><span class="tag" style="background:${CLUBCH[MG.color]}">${DIVS[MG.div].n}</span>${MG.trophies?`<span class="tag" style="background:#f0a800">世界冠軍 ×${MG.trophies}</span>`:''}</div>
+ <p class="sub">第 ${MG.season} 季 · 第 ${MG.week} / 10 週 · 目前第 ${rankOf(0)} 名（${usT().w} 勝 ${usT().l} 敗）</p>${kpi()}
+ ${MG.msg?`<div class="say plain">${esc(MG.msg)}</div>`:''}
+ <div class="say"><i>本週聯賽</i>第 ${MG.week} 輪 · ${nm.home?'主場':'客場'} vs <b>${esc(o.name)}</b>（實力 <b style="color:${RKC[RANK(o.str)]}">${RANK(o.str)}</b>）<br>戰術：${TACN[MG.tac]} · 訓練：${TRN[MG.train]}${hurt.length?`<br><b style="color:#e8443a">先發傷兵：${hurt.map(p=>esc(p.name)).join('、')}（開賽自動換替補）</b>`:''}${tired.length?`<br><b style="color:#c98a00">疲勞：${tired.map(p=>esc(p.name)).join('、')}</b>`:''}</div>
+ <div class="acts"><button class="act" style="background:#ff8a3d" data-m="play:1">觀戰<small>3D 比賽</small></button><button class="act" style="background:#e8604a" data-m="play:0">快速模擬<small>直接出結果</small></button><button class="act" style="background:#8a93a6" data-m="go:moffice:roster">調整陣容<small>先發・舉球</small></button></div>
+ <div class="lbl">設施</div><div class="acts two">
+  <button class="act" style="background:#1f9e92" data-m="go:mtrain">練習場<small>訓練菜單・特訓</small></button>
+  <button class="act" style="background:#3d7bff" data-m="go:massoc">排球協會<small>${f?'有友誼賽邀請！':'積分・得分榜・明星榜'}</small></button>
+  <button class="act" style="background:#8a63ff" data-m="go:moffice:market">球探市場<small>簽約新球員</small></button>
+  <button class="act" style="background:#ff5d8f" data-m="go:moffice:fac">球隊事務所<small>設施・餐廳・戰術</small></button></div>
+ <div class="foot"><button class="lnk" data-m="menu">← 主選單</button><button class="lnk" data-m="mreset">${mResetArm?'確定解散球隊？再按一次':'解散球隊重新開始'}</button></div>`}
+function mTrain(){const gf=1+.25*(MG.fac.gym-1),sp=mSpP&&byId(mSpP);
+ return`<h3>練習場</h3><p class="sub">訓練設施 Lv.${MG.fac.gym} · 成長效率 ×${gf.toFixed(2)} · 餐廳每週體力 +${REC[MG.fac.food]}</p>
+ <div class="lbl">本週訓練菜單（比賽後全隊套用）</div><div class="chips">${Object.keys(TRN).map(k=>`<button class="chip${MG.train===k?' on':''}" data-m="trn:${k}">${TRN[k]}</button>`).join('')}</div>
+ <p class="note">攻擊＝攻擊、跳躍；體能＝速度、跳躍；休養＝體力額外 +20 且不會練習受傷。傷兵不參加訓練。</p>
+ <div class="lbl">個人特訓（每週一次，30 萬，該項 +3）</div>
+ <div class="chips cs">${MG.roster.map(p=>`<button class="chip${mSpP===p.id?' on':''}" data-m="spp:${p.id}"${p.inj>0?' disabled':''}>${esc(p.name)}</button>`).join('')}</div>
+ <div class="chips cs" style="margin-top:6px">${ATTR.map(([k,n])=>`<button class="chip${mSpA===k?' on':''}" data-m="spa:${k}">${n}${sp?' '+r0(sp[k]):''}</button>`).join('')}</div>
+ <button class="go alt" data-m="spdo"${!sp||MG.spDone||MG.money<30?' disabled':''}>${MG.spDone?'本週已特訓':'進行特訓（30 萬）'}</button>
+ <div class="foot"><button class="lnk" data-m="go:mhub">← 回到俱樂部</button></div>`}
+function mAssoc(){const f=MG.friendly,d=mLg??MG.div,av=[['tbl','積分榜'],['score','得分榜'],['star','明星榜'],['fr','友誼賽']];
+ const lgChips=`<div class="chips cs">${DIVS.map((D,k)=>`<button class="chip${d===k?' on':''}" data-m="lgv:${k}">${D.s}${k===MG.div?'★':''}</button>`).join('')}</div>`;let body='';
+ if(mAv==='tbl')body=lgChips+`<table class="lg"><thead><tr><th>#</th><th>隊伍</th><th>勝</th><th>敗</th><th>積分</th></tr></thead><tbody>${standings(d).map((t,i)=>`<tr class="${t.id===0?'us':''}"><td>${i+1}</td><td>${esc(t.id===0?MG.name:t.name)} ${rkB(t.id===0?teamStr():t.str)}</td><td>${t.w}</td><td>${t.l}</td><td>${t.pts}</td></tr>`).join('')}</tbody></table>`;
+ else if(mAv==='score')body=lgChips+`<table class="lg"><thead><tr><th>#</th><th>球員</th><th>殺</th><th>攔</th><th>ACE</th><th>得分</th></tr></thead><tbody>${leaders(d).map((x,i)=>`<tr class="${x.us?'us':''}"><td>${i+1}</td><td>${esc(x.p.name)} <small>${esc(x.t)}</small></td><td>${x.p.ss.k}</td><td>${x.p.ss.b}</td><td>${x.p.ss.a}</td><td><b>${ptsOf(x.p)}</b></td></tr>`).join('')}</tbody></table>`;
+ else if(mAv==='star')body=`<p class="note">全部 5 個聯賽、能力最高的 10 名球員。</p><table class="lg"><thead><tr><th>#</th><th>球員</th><th>聯賽</th><th>位置</th><th>評價</th></tr></thead><tbody>${stars().map((x,i)=>`<tr class="${x.us?'us':''}"><td>${i+1}</td><td>${esc(x.p.name)} <small>${esc(x.t)}</small></td><td>${DIVS[x.d].s}</td><td>${POSN[x.p.pos]}</td><td>${rkB(ovr(x.p))} ${ovr(x.p)}</td></tr>`).join('')}</tbody></table>`;
+ else body=(f?`<div class="say"><i>邀請</i>「${esc(f.name)}」（實力 ${RANK(f.str)}）想打一場 15 分友誼賽。門票減半、球迷增加，但會消耗體力，也可能受傷。</div>
+ <div class="acts two"><button class="act" style="background:#ff8a3d" data-m="fr:1">接受・觀戰</button><button class="act" style="background:#e8604a" data-m="fr:0">接受・快速模擬</button></div>`:'<p class="note">目前沒有友誼賽邀請，過幾週再來看看。</p>')+
+  (MG.hist.length?`<div class="lbl">歷年成績</div><p class="note">${MG.hist.slice(-6).map(h=>`第 ${h.s} 季 ${DIVS[h.d].n} 第 ${h.rk} 名`).join('<br>')}</p>`:'');
+ return`<h3>排球協會</h3><p class="sub">第 ${MG.season} 季 · 已賽 ${MG.week-1} 輪 · 第 1 名升級、第 6 名降級</p>
+ <div class="tabs">${av.map(([k,n])=>`<button class="${mAv===k?'on':''}" data-m="av:${k}">${n}${k==='fr'&&f?'！':''}</button>`).join('')}</div>${body}
+ <div class="foot"><button class="lnk" data-m="go:mhub">← 回到俱樂部</button></div>`}
+function mOffice(){const tabs=[['roster','陣容'],['market','球探市場'],['fac','設施'],['tac','戰術']];let body='';
+ if(mTab==='roster'){
+  body=`<div class="lbl">先發（舉球員橘色）</div><div class="chips">${MG.lineup.map((id,i)=>{const p=byId(id);return`<span class="tag" style="background:${p.inj>0?'#e8443a':i===1?'#ff8a3d':'#3d7bff'}">${i===1?'舉 ':''}#${p.num} ${esc(p.name)}${p.inj>0?' 傷':''}</span>`}).join('')}</div>
+  <div class="lbl">球員名單 ${MG.roster.length}/12（點選查看）</div><div class="rgrid">${MG.roster.map(p=>{const o=ovr(p),i=MG.lineup.indexOf(p.id);return`<button class="prow${mSel===p.id?' on':''}${i>=0?' st1':''}${i===1?' st2':''}" data-m="sel:${p.id}"><span><em class="no">${p.num}</em>${esc(p.name)}${p.inj>0?` <b class="inj">傷${p.inj}</b>`:''}<small>${POSN[p.pos]} · ${p.age}歲 · <b style="color:${condC(p.cond)}">體${r0(p.cond)}</b></small></span><span class="rk" style="background:${RKC[RANK(o)]}">${RANK(o)}</span></button>`}).join('')}</div>
+  ${(()=>{const p=mSel&&byId(mSel);if(!p)return'';const o=ovr(p),i=MG.lineup.indexOf(p.id),h=p.inj>0;return`<div class="lbl">#${p.num} ${esc(p.name)}（${POSN[p.pos]}）${h?` <b class="inj">受傷中・還要 ${p.inj} 週</b>`:''}</div><div class="detail"><div class="crow"><b>名字</b><input class="nm ns" id="pn" maxlength="6" value="${esc(p.name)}" aria-label="球員名字"></div><div class="crow"><b>背號</b><input class="nm ns" id="pnum" type="number" inputmode="numeric" min="0" max="99" value="${p.num}" aria-label="背號"><button class="buy" data-m="pedit:${p.id}">儲存</button></div><p class="err" id="perr"></p>${attrRows(p)}
+   <p class="note">綜合 ${o} · 潛力 ${RANK(p.pot)} · 體力 ${r0(p.cond)}（目前能力 ×${(.7+.3*p.cond/100).toFixed(2)}）· 本季 ${ptsOf(p)} 分 · 週薪 ${salary(p)} 萬 · 身價 ${price(p)} 萬</p>
+   <div class="chips">${i>=0?`<button class="chip" data-m="bench:${p.id}">移出先發</button>`:`<button class="chip" data-m="start:${p.id}"${h?' disabled':''}>設為先發</button>`}${i!==1?`<button class="chip" data-m="setr:${p.id}"${h?' disabled':''}>設為舉球員</button>`:''}${MG.roster.length>7?`<button class="chip" data-m="sell:${p.id}">出售（+${r0(price(p)*.7)} 萬）</button>`:''}</div></div>`})()}
+  <button class="go alt" data-m="auto">自動排出最佳陣容</button>`}
+ else if(mTab==='market')body=`<p class="note">每兩週更新。A、B 級好手很少出現，身價也較高。名單上限 12 人，資金 ${MG.money} 萬。</p>${MG.market.map(p=>{const o=ovr(p);return`<div class="shop"><span>${esc(p.name)} ${rkB(o)}<small>${POSN[p.pos]} · ${p.age} 歲 · 潛力 ${RANK(p.pot)} · 週薪 ${salary(p)} 萬<br>攻 ${r0(p.atk)} 守 ${r0(p.def)} 舉 ${r0(p.set)} 發 ${r0(p.srv)} 速 ${r0(p.spd)} 跳 ${r0(p.jmp)}</small></span><button class="buy" data-m="buy:${p.id}"${MG.money<price(p)||MG.roster.length>=12?' disabled':''}>${price(p)} 萬</button></div>`}).join('')||'<p class="note">本期名單已簽完。</p>'}`;
+ else if(mTab==='fac'){const a=MG.fac.arena,g=MG.fac.gym,f=MG.fac.food;
+  const row=(n,lv,desc,cost,act)=>`<div class="shop"><span>${n} Lv.${lv}<small>${desc}</small></span>${lv<5?`<button class="buy" data-m="${act}"${MG.money<cost?' disabled':''}>升級 ${cost} 萬</button>`:'<b>已滿級</b>'}</div>`;
+  body=row('體育館',a,`容納 ${ARENA[a]} 人；主場門票＝到場球迷 × 0.03 萬`,ARC[a+1],'upa')+row('練習場',g,`訓練成長效率 ×${(1+.25*(g-1)).toFixed(2)}`,GYMC[g+1],'upg')+
+   row('球員餐廳',f,`每週全隊體力回復 +${REC[f]}${f<5?`（下一級 +${REC[f+1]}）`:''}`,FOODC[f+1],'upf')+
+   `<p class="note">每週贊助 ${DIVS[MG.div].sp} 萬（聯賽越高越多），全隊週薪 ${MG.roster.reduce((s,p)=>s+salary(p),0)} 萬。</p>`}
+ else body=`<div class="chips">${Object.keys(TACN).map(k=>`<button class="chip${MG.tac===k?' on':''}" data-m="tac:${k}">${TACN[k]}</button>`).join('')}</div><p class="note">${TACD[MG.tac]} 觀戰時也可以隨時切換戰術。</p>`;
+ return`<h3>球隊事務所</h3><div class="tabs">${tabs.map(([k,n])=>`<button class="${mTab===k?'on':''}" data-m="tab:${k}">${n}</button>`).join('')}</div>${body}
+ <div class="foot"><button class="lnk" data-m="go:mhub">← 回到俱樂部</button></div>`}
+function mResult(){const r=MG.last;
+ return`<h3>${r.win?'勝利！':'落敗……'}</h3><p class="sub">${r.fr?'友誼賽 · ':''}vs ${esc(r.opp)} · ${r.sc[0]} : ${r.sc[1]}${r.mvp?` · MVP ${esc(r.mvp)}`:''}</p>
+ <table class="lg"><thead><tr><th></th><th>球員</th><th>殺</th><th>攔</th><th>ACE</th><th>體力</th></tr></thead><tbody>${r.ids.map(id=>{const p=byId(id),s=r.ps[id]||{k:0,b:0,a:0};return p?`<tr><td>${p.num}</td><td>${esc(p.name)}</td><td>${s.k}</td><td>${s.b}</td><td>${s.a}</td><td style="color:${condC(p.cond)}">${r0(p.cond)}</td></tr>`:''}).join('')}</tbody></table>
+ <div class="say"><i>經營</i>球迷 ${r.fd>=0?'+':''}${r.fd}${r.gate?`、門票 +${r.gate} 萬`:'（客場無門票）'}。先發平均消耗體力 ${r.drain||0}。${r.subs&&r.subs.length?`<br>傷兵替補：${esc(r.subs.join('、'))}`:''}${r.inj&&r.inj.length?`<br><b style="color:#e8443a">受傷：${esc(r.inj.join('、'))}</b>`:''}</div>
+ <button class="go" data-m="${r.fr?'go:mhub':'wend'}">${r.fr?'回到俱樂部':'結束本週'}</button>`}
+function mSeason(){const s=MG.sres,up=s.d1<s.d0,dn=s.d1>s.d0;
+ return`<h3>${s.champ?'世界盃冠軍！':s.rk===1?DIVS[s.d0].n+'冠軍！':up?'升級成功！':dn?'降級了……':'賽季結束'}</h3><p class="sub">第 ${MG.season-1} 季 ${DIVS[s.d0].n} 第 ${s.rk} 名 · 獎金 +${s.prize} 萬</p>
+ <table class="lg"><thead><tr><th>#</th><th>隊伍</th><th>勝</th><th>敗</th><th>積分</th></tr></thead><tbody>${s.table.map((t,i)=>`<tr class="${t.us?'us':''}"><td>${i+1}</td><td>${esc(t.n)}</td><td>${t.w}</td><td>${t.l}</td><td>${t.pts}</td></tr>`).join('')}</tbody></table>
+ ${s.king?`<div class="say"><i>得分王</i>${esc(s.king)}<br><i>明星球員</i>${s.star.map(esc).join('、')}</div>`:''}
+ <p class="note">${(s.news||[]).map(esc).join('<br>')}</p>
+ <div class="say"><i>新賽季</i>下一季在 <b>${DIVS[s.d1].n}</b> 出賽。全隊年齡 +1${s.ret.length?`，${s.ret.map(esc).join('、')} 宣布退休`:''}。</div>
+ <button class="go" data-m="go:mhub">開始第 ${MG.season} 季</button>`}
+function showM(s){stopDemo();mScreen=s;if(s!=='mhub')mResetArm=false;
+ $('#mvCard').innerHTML=s==='mcreate'?mCreate():s==='mhub'?mHub():s==='mtrain'?mTrain():s==='massoc'?mAssoc():s==='moffice'?mOffice():s==='mresult'?mResult():mSeason();
+ const v=$('#mv');v.classList.remove('hide');if(showM.last!==s){v.scrollTop=0;showM.last=s}
+ $('#menu').classList.add('hide');$('#cv').classList.add('hide');$('#over').classList.add('hide');mode='mgr';mBuild();fit($('#mvCard'))}
+function mBuild(){const key=MG?MG.color+'|'+MG.lineup.map(id=>id+'#'+(byId(id)||{}).num).join(','):'none';if(mPrev.key===key)return;mDrop();if(!MG)return;
+ mPrev=MG.lineup.map((id,i)=>{const p=byId(id),m=makePlayer(CLUBC[MG.color],p.look,p.num??[7,3,11,1,9,5][i]);m.g.position.set(-6.5,0,(i-2.5)*1.05);scene.add(m.g);return{m,ph:R()*6}});mPrev.key=key}
+function mDrop(){(mPrev||[]).forEach(o=>scene.remove(o.m.g));mPrev=[];mPrev.key=null}
+const MACT={
+ ccol:i=>{mCreate.c=+i;showM('mcreate')},
+ mcreate:()=>{const n=(mCreate.n||'').trim();if(!n){$('#merr').textContent='請先幫球隊取個名字。';return}newClub(n,mCreate.c||0);msave();showM('mhub')},
+ go:(s,t)=>{if(t)mTab=t;if(s==='massoc'){mLg=null;mAv=MG.friendly?'fr':'tbl'}showM(s)},tab:t=>{mTab=t;showM('moffice')},av:k=>{mAv=k;showM('massoc')},
+ play:w=>{const nm=ourMatch();startMgrMatch(nm.opp,nm.home,false,w==='1')},
+ fr:w=>{if(MG.friendly)startMgrMatch(MG.friendly,true,true,w==='1')},
+ wend:weekEnd,
+ trn:k=>{MG.train=k;msave();showM('mtrain')},spp:id=>{mSpP=id;showM('mtrain')},spa:k=>{mSpA=k;showM('mtrain')},
+ spdo:()=>{const p=byId(mSpP);if(!p||p.inj>0||MG.spDone||MG.money<30)return;MG.money-=30;MG.spDone=1;p[mSpA]=Math.min(99,p[mSpA]+3);MG.msg=`${p.name} 完成${ATTR.find(a=>a[0]===mSpA)[1]}特訓（+3）。`;msave();showM('mtrain')},
+ sel:id=>{mSel=mSel===id?null:id;showM('moffice')},
+ start:id=>{setStarter(id);msave();showM('moffice')},bench:id=>{benchIt(id);msave();showM('moffice')},setr:id=>{makeSetter(id);msave();showM('moffice')},
+ auto:()=>{autoLineup();msave();showM('moffice')},
+ pedit:id=>{const p=byId(id);if(!p)return;const n=$('#pn').value.trim(),v=$('#pnum').value.trim(),k=+v,e=$('#perr');
+  if(!n){e.textContent='名字不能空白。';return}if(v===''||!Number.isInteger(k)||k<0||k>99){e.textContent='背號請輸入 0～99 的整數。';return}
+  const dup=MG.roster.find(x=>x!==p&&x.num===k);if(dup){e.textContent=`背號 ${k} 已經是 ${dup.name} 的了。`;return}
+  p.name=n;p.num=k;MG.msg=`已更新：#${k} ${n}`;msave();showM('moffice')},
+ sell:id=>{const p=byId(id);if(!p||MG.roster.length<=7)return;MG.money+=r0(price(p)*.7);MG.roster=MG.roster.filter(x=>x!==p);if(MG.lineup.includes(id)){MG.lineup=MG.lineup.filter(x=>x!==id);autoLineup()}mSel=null;msave();showM('moffice')},
+ buy:id=>{const p=MG.market.find(x=>x.id===id);if(!p||MG.money<price(p)||MG.roster.length>=12)return;MG.money-=price(p);p.num=null;p.ss=ss0();MG.roster.push(p);ensureNums();MG.market=MG.market.filter(x=>x!==p);MG.msg=`簽下了 ${p.name}（${POSN[p.pos]}）！`;msave();showM('moffice')},
+ upa:()=>{const a=MG.fac.arena;if(a>=5||MG.money<ARC[a+1])return;MG.money-=ARC[a+1];MG.fac.arena++;msave();showM('moffice')},
+ upg:()=>{const g=MG.fac.gym;if(g>=5||MG.money<GYMC[g+1])return;MG.money-=GYMC[g+1];MG.fac.gym++;msave();showM('moffice')},
+ upf:()=>{const f=MG.fac.food;if(f>=5||MG.money<FOODC[f+1])return;MG.money-=FOODC[f+1];MG.fac.food++;msave();showM('moffice')},
+ tac:k=>{MG.tac=k;msave();showM('moffice')},lgv:k=>{mLg=+k;showM('massoc')},
+ mreset:()=>{if(!mResetArm){mResetArm=true;showM('mhub');return}mResetArm=false;mwipe();MG=null;mDrop();showM('mcreate')},
+ menu:()=>{mDrop();$('#mv').classList.add('hide');toMenu()}};
+$('#mvCard').addEventListener('click',e=>{const b=e.target.closest('[data-m]');if(!b||b.disabled)return;const[a,...r]=b.dataset.m.split(':');if(MACT[a])MACT[a](...r)});
+$('#mvCard').addEventListener('input',e=>{if(e.target.id==='cn')mCreate.n=e.target.value});
+document.querySelectorAll('#mgrbar [data-s]').forEach(b=>b.addEventListener('click',()=>{if(!cfg.mgr)return;cfg.mgr.speed=+b.dataset.s;document.querySelectorAll('#mgrbar [data-s]').forEach(x=>x.classList.toggle('on',x===b))}));
+$('#tacBtn').addEventListener('click',()=>{if(!cfg.mgr)return;const ks=Object.keys(TACN),k=ks[(ks.indexOf(cfg.mgr.tac[0])+1)%ks.length];cfg.mgr.tac[0]=k;applyTac(0);$('#tacBtn').textContent='戰術：'+TACN[k];msg('戰術變更：'+TACN[k],1)});
+$('#skipBtn').addEventListener('click',()=>{if(cfg.mgr)simToEnd()});
+$('#mgrBtn').addEventListener('click',async()=>{await Promise.race([waitSync(),new Promise(r=>setTimeout(r,10000))]);MG=mload();if(MG)showM('mhub');else{mCreate.n='';mCreate.c=0;showM('mcreate')}});
+
+/* ---------- online: Google sign-in, cloud saves, family leaderboard (Firebase) ---------- */
+const CLOUD={user:null,pend:{},timer:0,syncing:null,msg:''};
+const CKEY={career:LSK,mgr:MK};
+const cloudOn=()=>!!(window.FB&&FB.ready&&CLOUD.user);
+const acctName=()=>{try{const n=localStorage.getItem('bump_nick');if(n)return n}catch(e){}return(CLOUD.user&&CLOUD.user.displayName||'玩家').slice(0,20)};
+function cloudQueue(k){if(!cloudOn())return;CLOUD.pend[k]=1;clearTimeout(CLOUD.timer);CLOUD.timer=setTimeout(cloudFlush,1500)}
+async function cloudFlush(){clearTimeout(CLOUD.timer);if(!cloudOn())return;const ks=Object.keys(CLOUD.pend);CLOUD.pend={};
+ for(const k of ks){try{await FB.put(k,localStorage.getItem(CKEY[k])||JSON.stringify({deleted:true,t:Date.now()}))}catch(e){CLOUD.pend[k]=1;acctNote('雲端存檔失敗，稍後自動重試');clearTimeout(CLOUD.timer);CLOUD.timer=setTimeout(cloudFlush,15000)}}
+ if(ks.length)submitBoard()}
+addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')cloudFlush()});
+const tOf=s=>{try{const o=JSON.parse(s);return o?o.t||0:-1}catch(e){return -1}};
+async function cloudSync(){renderAcct();
+ for(const k of ['career','mgr']){try{const remote=await FB.get(k),local=localStorage.getItem(CKEY[k]),tr=remote?tOf(remote):-1,tl=local?tOf(local):-1;
+  if(tr>tl){const o=JSON.parse(remote);if(o.deleted)localStorage.removeItem(CKEY[k]);else localStorage.setItem(CKEY[k],remote)}
+  else if(tl>tr&&local)await FB.put(k,local)}catch(e){acctNote('同步失敗：'+(e&&e.code||'連線問題'))}}
+ CLOUD.syncing=null;renderAcct();submitBoard()}
+const waitSync=()=>CLOUD.syncing||Promise.resolve();
+function boardData(){let career=null,mgr=null;
+ try{const c=JSON.parse(localStorage.getItem(LSK)||'null');if(c&&c.v===1){const st=c.st;career={n:String(c.name).slice(0,12),ov:Math.round((st.spd+st.jmp+st.pow)/3),w:c.w,l:c.l,wk:c.week,ch:!!(c.res&&c.res[28])}}}catch(e){}
+ try{const m=JSON.parse(localStorage.getItem(MK)||'null');if(m&&m.v===1&&m.lg&&m.lg.length===DIVS.length){mgr={club:String(m.name).slice(0,12),div:m.div,best:Math.min(m.div,...(m.hist||[]).map(h=>h.d)),tr:m.trophies||0,s:m.season}}}catch(e){}
+ return{name:acctName(),career,mgr}}
+let boardT=0;function submitBoard(){if(!cloudOn())return;clearTimeout(boardT);boardT=setTimeout(()=>{FB.submit(boardData()).catch(()=>{})},800)}
+function acctNote(t){CLOUD.msg=t;renderAcct();setTimeout(()=>{if(CLOUD.msg===t){CLOUD.msg='';renderAcct()}},5000)}
+function renderAcct(){const el=$('#acct');if(!el)return;const F=window.FB;let h;
+ if(!F)h='<span class="ac-s">連線中…</span>';
+ else if(F.offline)h='<span class="ac-s">離線模式：存檔只在這台裝置</span>';
+ else if(!F.ready)h='<span class="ac-s">登入服務暫時連不上，先用這台裝置的存檔</span>';
+ else if(!CLOUD.user)h='<button class="ac-b g" data-ac="in">用 Google 登入・雲端存檔</button>';
+ else h=`<span class="ac-s"><b>${esc(acctName())}</b>　${CLOUD.syncing?'同步中…':'已雲端同步'}</span><button class="ac-b" data-ac="lb">家族排行榜</button><button class="ac-b" data-ac="out">登出</button>`;
+ el.innerHTML=h+(CLOUD.msg?`<div class="ac-m">${esc(CLOUD.msg)}</div>`:'');fit($('#menu .card'))}
+const AUTHERR={'auth/unauthorized-domain':'這個網址還沒加進 Firebase 的「授權網域」','auth/popup-closed-by-user':'登入視窗被關掉了','auth/operation-not-allowed':'Firebase 還沒開啟 Google 登入','auth/network-request-failed':'網路連線失敗'};
+$('#acct').addEventListener('click',async e=>{const b=e.target.closest('[data-ac]');if(!b)return;const a=b.dataset.ac;
+ if(a==='in'){try{await FB.signIn()}catch(er){acctNote('登入失敗：'+(AUTHERR[er&&er.code]||er&&er.code||'請再試一次'))}}
+ if(a==='out'){await cloudFlush();await FB.signOut()}
+ if(a==='lb')openBoard()});
+addEventListener('fbauth',e=>{const was=CLOUD.user&&CLOUD.user.uid;CLOUD.user=e.detail||null;if(CLOUD.user&&CLOUD.user.uid!==was)CLOUD.syncing=cloudSync();renderAcct()});
+// ---- leaderboard ----
+let lbTab='career',lbRows=[];
+async function openBoard(){$('#lbv').classList.remove('hide');$('#lbCard').innerHTML='<h3>家族排行榜</h3><p class="sub">讀取中…</p>';
+ await waitSync();await cloudFlush();try{await FB.submit(boardData())}catch(e){}
+ try{lbRows=await FB.board()}catch(e){lbRows=null}renderBoard()}
+function renderBoard(){const me=CLOUD.user&&CLOUD.user.uid;let rows='';
+ if(!lbRows)rows='<p class="note">讀取失敗，請檢查 Firestore 規則是否已貼上（見 README）。</p>';
+ else if(lbTab==='career'){const r=lbRows.filter(x=>x.career).sort((a,b)=>b.career.ov-a.career.ov||b.career.w-a.career.w);
+  rows=r.length?`<table class="lg"><thead><tr><th>#</th><th>玩家</th><th>球員</th><th>評價</th><th>戰績</th></tr></thead><tbody>${r.map((x,i)=>`<tr class="${x.id===me?'us':''}"><td>${i+1}</td><td>${esc(x.name)}</td><td>${esc(x.career.n)}${x.career.ch?' <small>全國冠軍</small>':''}</td><td><span class="rk mini" style="background:${RKC[RANK(x.career.ov)]}">${RANK(x.career.ov)}</span> ${x.career.ov}</td><td>${x.career.w}-${x.career.l}</td></tr>`).join('')}</tbody></table>`:'<p class="note">還沒有人玩生涯模式。</p>'}
+ else{const r=lbRows.filter(x=>x.mgr).sort((a,b)=>b.mgr.tr-a.mgr.tr||a.mgr.best-b.mgr.best||a.mgr.div-b.mgr.div);
+  rows=r.length?`<table class="lg"><thead><tr><th>#</th><th>玩家</th><th>球隊</th><th>最高聯賽</th><th>世界冠軍</th></tr></thead><tbody>${r.map((x,i)=>`<tr class="${x.id===me?'us':''}"><td>${i+1}</td><td>${esc(x.name)}</td><td>${esc(x.mgr.club)}<small> 第${x.mgr.s}季</small></td><td>${(DIVS[x.mgr.best]||DIVS[BOTTOM]).s}</td><td>${x.mgr.tr}</td></tr>`).join('')}</tbody></table>`:'<p class="note">還沒有人玩經理人模式。</p>'}
+ $('#lbCard').innerHTML=`<h3>家族排行榜</h3><p class="sub">所有登入過的玩家都會出現在這裡</p>
+ <div class="tabs"><button class="${lbTab==='career'?'on':''}" data-lb="t:career">生涯模式</button><button class="${lbTab==='mgr'?'on':''}" data-lb="t:mgr">經理人模式</button></div>${rows}
+ <div class="crow" style="margin-top:10px"><b>暱稱</b><input class="nm ns" id="nick" maxlength="12" value="${esc(acctName())}" aria-label="暱稱"><button class="buy" data-lb="nick">儲存</button></div>
+ <div class="foot"><button class="lnk" data-lb="close">← 關閉</button></div>`;fit($('#lbCard'))}
+$('#lbCard').addEventListener('click',async e=>{const b=e.target.closest('[data-lb]');if(!b)return;const a=b.dataset.lb;
+ if(a==='close')$('#lbv').classList.add('hide');
+ if(a.startsWith('t:')){lbTab=a.slice(2);renderBoard()}
+ if(a==='nick'){const v=$('#nick').value.trim().slice(0,12);if(!v)return;try{localStorage.setItem('bump_nick',v)}catch(er){}renderAcct();await FB.submit(boardData()).catch(()=>{});lbRows=await FB.board().catch(()=>lbRows);renderBoard()}});
+renderAcct();
+
+demoStart();
+window.__dbg={S:()=>S,players:()=>players,cfg,ball,spikeFX,update,ACT,C:()=>C,careerEnd,MACT,MG:()=>MG};
+}
+</script>
+</body>
+</html>
