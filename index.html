@@ -75,7 +75,10 @@ body{font:16px/1.5 "Baloo 2","Noto Sans TC","PingFang TC","Microsoft JhengHei",s
 #chatBtn.show{display:block}body[data-m=game] #chatBtn{display:none}
 #chatN{position:absolute;right:-6px;top:-6px;min-width:22px;height:22px;border-radius:11px;background:#e8443a;color:#fff;font-size:12px;display:none;place-items:center;padding:0 5px}
 #chatv{position:fixed;z-index:7;top:0;right:0;bottom:0;width:min(380px,100vw);background:#fff;display:flex;flex-direction:column;box-shadow:-6px 0 24px rgba(0,0,0,.18);padding:calc(env(safe-area-inset-top) + 10px) 12px calc(env(safe-area-inset-bottom) + 8px)}
-#chatv.hide{display:none}body[data-m=game] #chatv{display:none}
+#chatv.hide{display:none}body[data-m=game]:not(.dock) #chatv{display:none}
+body.dock #chatv{width:340px;box-shadow:none;border-left:1px solid #d6dbe3}
+body.dock #stage canvas{right:340px;width:calc(100% - 340px)}
+body.dock :is(.ov,#hud,#banner){right:340px}body.dock :is(#cue,#mgrbar){left:calc(50% - 170px)}body.dock #menuBtn{right:352px}
 .chd{display:flex;justify-content:space-between;align-items:center;font-size:18px;padding-bottom:6px;border-bottom:1px solid #e3e6ea}
 #chatList{flex:1;overflow-y:auto;padding:8px 2px;display:flex;flex-direction:column;gap:8px}
 .cm{display:flex;flex-direction:column;align-items:flex-start;max-width:86%}.cm.me{align-self:flex-end;align-items:flex-end}
@@ -819,7 +822,7 @@ function loop(now){requestAnimationFrame(loop);if(document.body.dataset.m!==mode
  let gdt=dt;if(FX.stop>0){FX.stop-=dt;gdt=dt*.08}
  if(mode==='menu'&&cfg.demo&&H&&S.state!=='over'){MUTE=true;update(gdt);MUTE=false}
  if(mode==='game'&&S.state!=='over'){const n=cfg.mgr?cfg.mgr.speed:1;for(let i=0;i<n&&mode==='game'&&S.state!=='over';i++)update(gdt)}render(dt)}
-function resize(){renderer.setSize(innerWidth,innerHeight,false);cam.aspect=innerWidth/innerHeight;cam.fov=cam.aspect<1?62:50;cam.updateProjectionMatrix()}
+function resize(){const W=innerWidth-(document.body.classList.contains('dock')?340:0);renderer.setSize(W,innerHeight,false);cam.aspect=W/innerHeight;cam.fov=cam.aspect<1?62:50;cam.updateProjectionMatrix()}
 addEventListener('resize',resize);resize();requestAnimationFrame(loop);
 
 /* ---------- career mode ---------- */
@@ -1355,6 +1358,10 @@ renderAcct();
 
 /* ---------- online chat (Firestore realtime) ---------- */
 const CHAT={unsub:null,msgs:[],open:false,last:0,err:''};
+const DOCKMQ=matchMedia('(min-width:1100px) and (pointer:fine)');
+try{CHAT.collapsed=localStorage.getItem('bump_chat_dock')==='0'}catch(e){CHAT.collapsed=false}
+const dockOn=()=>cloudOn()&&DOCKMQ.matches&&!CHAT.collapsed;
+DOCKMQ.addEventListener&&DOCKMQ.addEventListener('change',()=>renderChat());
 try{CHAT.seen=+localStorage.getItem('bump_chat_seen')||0}catch(e){CHAT.seen=0}
 const tsMs=m=>m.ts&&m.ts.toMillis?m.ts.toMillis():Date.now();
 function chatStart(){chatStop();if(!cloudOn()||!FB.chatSub)return;CHAT.err='';
@@ -1362,10 +1369,12 @@ function chatStart(){chatStop();if(!cloudOn()||!FB.chatSub)return;CHAT.err='';
 function chatStop(){if(CHAT.unsub){CHAT.unsub();CHAT.unsub=null}CHAT.msgs=[];renderChat()}
 function chatUnread(){if(!CLOUD.user)return 0;return CHAT.msgs.filter(m=>m.uid!==CLOUD.user.uid&&tsMs(m)>CHAT.seen).length}
 const hhmm=t=>{const d=new Date(t);return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')};
-function renderChat(){const btn=$('#chatBtn');if(!btn)return;const on=cloudOn();btn.classList.toggle('show',on);
- if(CHAT.open){CHAT.seen=Math.max(CHAT.seen,...CHAT.msgs.map(tsMs),CHAT.seen);try{localStorage.setItem('bump_chat_seen',CHAT.seen)}catch(e){}}
+function renderChat(){const btn=$('#chatBtn');if(!btn)return;const on=cloudOn(),dk=dockOn();btn.classList.toggle('show',on&&!dk);
+ if(document.body.classList.contains('dock')!==dk){document.body.classList.toggle('dock',dk);resize();setTimeout(fitAll,30);renderChat.first=true}
+ const open=CHAT.open||dk;$('#chatX').textContent=dk?'收合':'關閉';
+ if(open){CHAT.seen=Math.max(CHAT.seen,...CHAT.msgs.map(tsMs),CHAT.seen);try{localStorage.setItem('bump_chat_seen',CHAT.seen)}catch(e){}}
  const n=chatUnread();$('#chatN').textContent=n>9?'9+':n;$('#chatN').style.display=n?'grid':'none';
- $('#chatv').classList.toggle('hide',!(on&&CHAT.open));if(!CHAT.open||!on)return;
+ $('#chatv').classList.toggle('hide',!(on&&open));if(!open||!on)return;
  const me=CLOUD.user.uid,box=$('#chatList'),atEnd=box.scrollHeight-box.scrollTop-box.clientHeight<60;
  box.innerHTML=CHAT.err?`<p class="note" style="color:#e8443a">${esc(CHAT.err)}</p>`:CHAT.msgs.length?CHAT.msgs.map(m=>`<div class="cm${m.uid===me?' me':''}"><div class="cb"><b>${esc(m.name||'玩家')}</b><span>${esc(m.text)}</span></div><small>${hhmm(tsMs(m))}${m.uid===me?` <button class="cx" data-del="${m.id}" aria-label="刪除這則訊息">刪除</button>`:''}</small></div>`).join(''):'<p class="note">還沒有人說話，打聲招呼吧！</p>';
  if(atEnd||renderChat.first!==false){box.scrollTop=box.scrollHeight;renderChat.first=false}}
@@ -1373,10 +1382,10 @@ let chatLast=0;
 async function chatSendNow(){const inp=$('#chatIn'),t=inp.value.trim().slice(0,200);if(!t||!cloudOn())return;
  if(Date.now()-chatLast<1500){$('#chatHint').textContent='慢一點，1.5 秒後再送';return}chatLast=Date.now();inp.value='';$('#chatHint').textContent='';
  try{await FB.chatSend(acctName(),t)}catch(e){$('#chatHint').textContent=e&&e.code==='permission-denied'?'送不出去：Firebase 規則還沒更新':'送出失敗，請再試一次';inp.value=t}}
-$('#chatBtn').addEventListener('click',()=>{CHAT.open=!CHAT.open;renderChat.first=true;renderChat();if(CHAT.open&&!COARSE)$('#chatIn').focus()});
-$('#chatX').addEventListener('click',()=>{CHAT.open=false;renderChat()});
+$('#chatBtn').addEventListener('click',()=>{if(DOCKMQ.matches&&CHAT.collapsed){CHAT.collapsed=false;try{localStorage.setItem('bump_chat_dock','1')}catch(e){}renderChat.first=true;renderChat();return}CHAT.open=!CHAT.open;renderChat.first=true;renderChat();if(CHAT.open&&!COARSE)$('#chatIn').focus()});
+$('#chatX').addEventListener('click',()=>{if(dockOn()){CHAT.collapsed=true;try{localStorage.setItem('bump_chat_dock','0')}catch(e){}}CHAT.open=false;renderChat()});
 $('#chatSend').addEventListener('click',chatSendNow);
-$('#chatIn').addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Enter'&&!e.isComposing){e.preventDefault();chatSendNow()}});
+$('#chatIn').addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Escape'){e.target.blur();return}if(e.key==='Enter'&&!e.isComposing){e.preventDefault();chatSendNow()}});
 $('#chatIn').addEventListener('keyup',e=>e.stopPropagation());
 $('#chatList').addEventListener('click',async e=>{const b=e.target.closest('[data-del]');if(b)try{await FB.chatDel(b.dataset.del)}catch(er){}});
 addEventListener('fbauth',e=>{if(e.detail)chatStart();else{CHAT.open=false;chatStop()}});
