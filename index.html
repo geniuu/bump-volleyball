@@ -94,6 +94,24 @@ body.dock :is(.ov,#hud,#banner){right:340px}body.dock :is(#cue,#mgrbar){left:cal
 .card.menu .go{margin-top:10px}
 @media (max-height:520px) and (min-aspect-ratio:1/1){.ov.side .card{width:min(760px,74vw);column-count:2;column-gap:20px}.ov.side .card>*{break-inside:avoid}.ov.side .card h3{column-span:none}}
 @media (max-aspect-ratio:1/1){.cv h3{font-size:24px}.say{padding:8px 10px;margin:8px 0;font-size:14px}.act{min-height:54px;font-size:15px}.st{margin:4px 0}.lbl{margin:8px 0 3px}}
+.go.violet{background:#8a63ff;box-shadow:0 5px 0 #6a45d8;color:#fff}.go.violet:active{box-shadow:0 2px 0 #6a45d8}
+#mvCard.wide{width:min(960px,94vw)}
+@media (max-aspect-ratio:1/1){.ov.side.full{padding-top:8px}}
+.rlay{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:20px;align-items:start}.rdet{position:sticky;top:0}
+.plist{display:flex;flex-direction:column;gap:6px}
+.pl{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;gap:10px;align-items:center;width:100%;text-align:left;border:0;background:#f4f8f7;border-radius:12px;padding:8px 12px;font:inherit;color:var(--ink);min-height:56px}
+.pl .pn{font-size:17px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pl small{display:block;font-size:13px;font-weight:600;color:#667}
+.pl .no{font-size:14px;min-width:2.1em;line-height:1.7}.pl.on{outline:3px solid var(--teal)}.pl.st1{box-shadow:inset 4px 0 0 #3d7bff}.pl.st2{box-shadow:inset 4px 0 0 #ff8a3d}.pl .tag{margin:0}
+.lbl small{font-weight:600;color:#8a93a6}
+.tgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.tbtn{border:0;border-radius:12px;background:#eef1f5;font:inherit;padding:8px 6px;min-height:58px;color:var(--ink);text-align:center}.tbtn b{display:block;font-size:17px}.tbtn small{font-size:12px;color:#667}
+.tbtn.on{background:var(--teal);color:#fff;box-shadow:0 3px 0 #157a70}.tbtn.on small{color:#e6fffb}
+.sphead,.sprow{display:grid;grid-template-columns:minmax(0,1fr) repeat(6,42px);gap:4px;align-items:center}
+.sphead{font-size:12px;font-weight:800;color:#1f9e92;text-align:center;margin-bottom:2px}
+.sprow{padding:4px 0;border-top:1px solid #eef1f5}.spb{display:contents}
+.spn{font-weight:800;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.spn small{display:block;font-size:12px;color:#667;font-weight:600}
+.spb button{border:0;border-radius:8px;background:#e3f4f0;font:inherit;font-weight:800;font-size:15px;min-height:42px;padding:0;color:var(--ink)}
+.spb button:not(:disabled):hover{background:#1f9e92;color:#fff}.spb button:disabled{opacity:.35}.sprow.done .spn{opacity:.55}
 .go.teal{background:var(--teal);box-shadow:0 5px 0 #157a70;color:#fff}.go.teal:active{box-shadow:0 2px 0 #157a70}
 .kpi{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:8px 0}
 .kpi div{background:#f4f8f7;border-radius:12px;padding:6px 10px}.kpi small{display:block;font-size:12px;color:#667;font-weight:700}.kpi b{font-size:17px;white-space:nowrap}
@@ -180,6 +198,7 @@ button:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
       <button class="go pink" id="careerBtn">生涯模式<small>建立角色，從街頭打進全國大賽</small></button>
       <button class="go teal" id="mgrBtn">經理人模式<small>經營俱樂部，從區域聯賽打進世界盃</small></button>
       <button class="go" id="entBtn">娛樂模式<small>自由對戰，1～6 人制</small></button>
+      <button class="go violet" id="lbBtn">排行榜<small>家人的生涯與經理人成績</small></button>
     </div>
     <div id="entPanel" class="off">
       <div class="row"><label>人數</label><div class="seg" data-k="mode"><button data-v="1">1人</button><button data-v="2">2人</button><button data-v="3">3人</button><button data-v="4">4人</button><button data-v="5">5人</button><button data-v="6" class="on">6人</button></div></div>
@@ -1031,10 +1050,11 @@ const ATTR=[['atk','攻擊'],['def','防守'],['set','舉球'],['srv','發球'],
 const CLUBC=[0x3d7bff,0xff5d8f,0x22c3a6,0xff8a3d,0x8a63ff,0xe8443a],CLUBCH=['#3d7bff','#ff5d8f','#22c3a6','#ff8a3d','#8a63ff','#e8443a'];
 const DIVS=[{n:'世界盃',s:'世界盃',lo:74,hi:92,sp:60,prize:500},{n:'超級聯賽',s:'超級',lo:58,hi:76,sp:40,prize:300},{n:'甲級聯賽',s:'甲級',lo:46,hi:62,sp:26,prize:180},
  {n:'乙級聯賽',s:'乙級',lo:36,hi:50,sp:18,prize:110},{n:'區域聯賽',s:'區域',lo:26,hi:40,sp:12,prize:70}];
-const BOTTOM=DIVS.length-1;
+const BOTTOM=DIVS.length-1,DSZ=[6,6,8,12,12],PROMO=[1,1,2,2];
 const DIVT=[['極光王國','赤焰帝國','冰川聯邦','沙漠之鷹','星海共和','雷神島'],['天鷹學園','王者企業','雷霆排球會','極光體育','鳳凰電力','帝國大學'],
- ['港都銀行','山城隊','東門鐵人','南風商工','北辰大學','西港工業'],['青峰高中','白浪漁會','紅磚倉庫','綠野農會','銀河電子','黑熊工程'],
- ['公園排球會','夜市聯隊','巷口少年','晨跑俱樂部','海風隊','河堤隊']];
+ ['港都銀行','山城隊','東門鐵人','南風商工','北辰大學','西港工業','北港漁會','高原航空'],
+ ['青峰高中','白浪漁會','紅磚倉庫','綠野農會','銀河電子','黑熊工程','橘子工坊','藍海科技','金沙建設','鐵道部隊','白鷺大學','松林社大'],
+ ['公園排球會','夜市聯隊','巷口少年','晨跑俱樂部','海風隊','河堤隊','社區活動中心','菜市場聯隊','巷尾阿伯隊','早餐店之光','廟口青年會','騎樓排球社']];
 const ARENA=[0,500,1200,3000,6000,12000],ARC=[0,0,200,500,1200,2500],GYMC=[0,0,150,400,900,2000],REC=[0,8,12,16,21,26],FOODC=[0,0,120,300,700,1500];
 const TACN={bal:'均衡',pow:'強攻',quick:'快攻',def:'穩守',serve:'發球攻勢'};
 const TACD={bal:'沒有特別偏重。',pow:'扣球更重、少吊球，但失誤略增。',quick:'舉球更低更快，對手攔網較難跟上。',def:'防守與接扣成功率提高，扣球力道稍降。',serve:'發球更強，對手難接，但發球失誤增加。'};
@@ -1075,13 +1095,15 @@ function rr(n){const a=[...Array(n).keys()],rs=[];for(let r=0;r<n-1;r++){const m
 function genRoster(s){const used=new Set();return LPOS.map(ps=>{const p=genPlayer(s-4,s+4,ps,19+(R()*12|0));let n;do n=1+(R()*20|0);while(used.has(n));used.add(n);p.num=n;return p})}
 function genTeam(d,k,name){const D=DIVS[d],s=D.lo+R()*(D.hi-D.lo),t={id:'t'+d+k+mid(),name,color:CLUBC[(k+d*2+1)%6],w:0,l:0,pts:0,pf:0,pa:0,roster:genRoster(s)};t.str=teamOvr(t);return t}
 function genLeague(d){return DIVT[d].map((n,k)=>genTeam(d,k,n))}
+const schedFor=n=>n>=12?rr(n).slice(0,n-1):rr(n);
+const seasonLen=()=>MG.scheds[MG.div].length;
 function shuffle(a){for(let i=a.length-1;i>0;i--){const j=R()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]]}return a}
 function newSeason(fresh){MG.lg.forEach((L,d)=>{const D=DIVS[d];L.forEach(t=>{Object.assign(t,{w:0,l:0,pts:0,pf:0,pa:0});
   if(t.id===0){t.name=MG.name;return}
   t.roster.forEach(p=>{p.ss=ss0();if(fresh)return;p.age++;const g=(p.age<24?1.2:p.age>30?-1.4:.2);ATTR.forEach(([k])=>p[k]=clamp(p[k]+(R()-.45)*3+g,15,99));
    if(p.age>34){Object.assign(p,genPlayer(t.str-6,t.str+2,p.pos,19+(R()*4|0)),{num:p.num})}});
   const o=teamOvr(t);if(o<D.lo-6||o>D.hi+6){const f=(clamp(o,D.lo-6,D.hi+6))/o;t.roster.forEach(p=>ATTR.forEach(([k])=>p[k]=clamp(p[k]*f,15,99)))}t.str=teamOvr(t)});shuffle(L)});
- MG.roster.forEach(p=>p.ss=ss0());MG.sched=rr(6);MG.week=1;MG.market=genMarket();MG.friendly=null;MG.spDone=0}
+ MG.roster.forEach(p=>p.ss=ss0());MG.scheds=MG.lg.map(L=>schedFor(L.length));delete MG.sched;MG.week=1;MG.market=genMarket();MG.friendly=null}
 const ourL=()=>MG.lg[MG.div],ourIdx=()=>ourL().findIndex(t=>t.id===0),usT=()=>ourL()[ourIdx()];
 function wpick(ps,f){const ws=ps.map(f),s=ws.reduce((a,b)=>a+b,0);let r=R()*s;for(let i=0;i<ps.length;i++){r-=ws[i];if(r<=0)return ps[i]}return ps[ps.length-1]}
 function addPts(t,n){if(!t.roster)return;const ps=t.roster;for(let i=0;i<n;i++){const r=R();
@@ -1090,7 +1112,7 @@ function simPair(a,b){const pa=1/(1+Math.exp(-((a.str||teamStr())-(b.str||teamSt
  W.w++;W.pts+=3;L.l++;W.pf+=25;W.pa+=lp;L.pf+=lp;L.pa+=25;addPts(W,25);addPts(L,lp)}
 function genMarket(){const d=DIVS[MG.div],a=[];for(let i=0;i<4;i++)a.push(marketPlayer(d.lo-6,d.hi+2));a.push(marketPlayer(d.lo-10,d.lo,null,17+(R()*3|0)));return a}
 function mkFriendly(){const ts=teamStr(),pool=MG.lg.filter((L,d)=>d!==MG.div).flat(),near=pool.filter(t=>Math.abs(t.str-ts)<14),arr=near.length?near:pool,t=arr[R()*arr.length|0];return{id:t.id,name:t.name,str:t.str,color:t.color}}
-function ourMatch(){const i=ourIdx(),m=MG.sched[MG.week-1].find(x=>x.includes(i)),home=m[0]===i;return{home,opp:ourL()[home?m[1]:m[0]]}}
+function ourMatch(){const i=ourIdx(),m=MG.scheds[MG.div][MG.week-1].find(x=>x.includes(i)),home=m[0]===i;return{home,opp:ourL()[home?m[1]:m[0]]}}
 function standings(d=MG.div){return[...MG.lg[d]].sort((a,b)=>b.pts-a.pts||(b.pf-b.pa)-(a.pf-a.pa))}
 const rankOf=id=>standings().findIndex(t=>t.id===id)+1;
 const findTeam=id=>MG.lg.flat().find(t=>t.id===id);
@@ -1102,11 +1124,14 @@ function mload(){try{const m=JSON.parse(localStorage.getItem(MK)||'null');if(!m|
  if(m.lg.length===3){const map=[1,2,4];m.lg=[genLeague(0),m.lg[0],m.lg[1],genLeague(3),m.lg[2]];m.div=map[m.div];(m.hist||[]).forEach(h=>h.d=map[h.d]);delete m.sres}
  m.lg.forEach(L=>L.forEach(t=>{if(t.id!==0&&!t.roster){t.roster=genRoster(t.str||40);t.str=teamOvr(t)}(t.roster||[]).forEach(p=>{p.ss=p.ss||ss0();p.look={...randLook(),...p.look}})}));
  m.fac.food=m.fac.food||1;m.titles=m.titles||[];
+ if(!m.scheds||m.lg.some((L,d)=>L.length!==DSZ[d])){const used=new Set(m.lg.flat().map(t=>t.name));
+  m.lg.forEach((L,d)=>{DIVT[d].filter(n=>!used.has(n)).forEach((n,k)=>{if(L.length<DSZ[d])L.push(genTeam(d,10+k,n))})});
+  newSeason(true);m.msg='聯賽擴編！區域、乙級 12 隊，甲級 8 隊。本季重新開始。'}
  [...m.roster,...(m.market||[])].forEach(p=>{p.look={...randLook(),...p.look};p.ss=p.ss||ss0();p.inj=p.inj||0});ensureNums();MG=sv;return m}catch(e){return null}}
 function mwipe(){try{localStorage.removeItem(MK)}catch(e){}cloudQueue('mgr')}
 function newClub(name,color){MG={v:1,name,color,money:300,fans:200,season:1,div:BOTTOM,fac:{arena:1,gym:1,food:1},tac:'bal',train:'atk',roster:[],lineup:[],trophies:0,titles:[],hist:[],msg:''};
  ['S','S','OH','OH','OH','MB','MB','OP','OP'].forEach(ps=>MG.roster.push(genPlayer(30,42,ps)));
- MG.lg=DIVS.map((_,d)=>genLeague(d));MG.lg[BOTTOM][5]={id:0,name,w:0,l:0,pts:0,pf:0,pa:0};ensureNums();autoLineup();newSeason(true);
+ MG.lg=DIVS.map((_,d)=>genLeague(d));MG.lg[BOTTOM][DSZ[BOTTOM]-1]={id:0,name,w:0,l:0,pts:0,pf:0,pa:0};ensureNums();autoLineup();newSeason(true);
  MG.msg='球隊成立了！目標：從區域聯賽一路打進世界盃並奪冠。'}
 
 // ---- engine params from player attributes (stamina scales every attribute) ----
@@ -1151,7 +1176,7 @@ function mgrEnd(w){const m=mPend,win=w===0,sc=S.score.slice(),ps=S.ps||{};
  if(!m.fr){const L=ourL(),oi=ourIdx(),us=L[oi],op=L.find(t=>t.id===m.opp.id);
   for(const[id,s]of Object.entries(ps)){const p=byId(id)||(op&&op.roster||[]).find(x=>x.id===id);if(p){p.ss=p.ss||ss0();p.ss.k+=s.k;p.ss.b+=s.b;p.ss.a+=s.a}}
   us.pf+=sc[0];us.pa+=sc[1];op.pf+=sc[1];op.pa+=sc[0];if(win){us.w++;us.pts+=3;op.l++}else{us.l++;op.w++;op.pts+=3}
-  MG.lg.forEach((Lg,d)=>{for(const[x,y]of MG.sched[MG.week-1]){if(d===MG.div&&(x===oi||y===oi))continue;simPair(Lg[x],Lg[y])}})}
+  MG.lg.forEach((Lg,d)=>{const rd=MG.scheds[d][MG.week-1];if(rd)for(const[x,y]of rd){if(d===MG.div&&(x===oi||y===oi))continue;simPair(Lg[x],Lg[y])}})}
  else MG.friendly=null;
  MG.last={win,sc,opp:m.opp.name,mvp:mvp?mvp.name:'',ps,ids:m.ids,gate,fd,fr:m.fr,drain,inj,subs:m.subs};
  msave();showM('mresult')}
@@ -1168,10 +1193,12 @@ function weekEnd(){const gf=1+.25*(MG.fac.gym-1),menu=MG.train,rec=REC[MG.fac.fo
  MG.msg=`本週收支：贊助 +${sp} 萬、薪水 −${sal} 萬${MG.last&&MG.last.gate?`、門票 +${MG.last.gate} 萬`:''}。全隊體力 +${rec}。${menu==='rest'?'':`${TRN[menu]}訓練：${grown} 人成長。`}`+
   (healed.length?` ${healed.join('、')} 傷癒歸隊。`:'')+(hurt.length?` ${hurt.join('、')} 練習中受傷（1 週）。`:'')+(MG.money<0?' 資金是負的，小心經營！':'');
  MG.week++;MG.spDone=0;if(MG.week%2===1)MG.market=genMarket();MG.friendly=R()<.35?mkFriendly():MG.friendly;
- if(MG.week>10){seasonEnd();return}msave();showM('mhub')}
-function seasonEnd(){const st=standings(),rk=st.findIndex(t=>t.id===0)+1,d0=MG.div,mult=[1,.6,.4,.25,.2,.2][rk-1],prize=r0(DIVS[d0].prize*mult);
+ if(MG.week>seasonLen()){seasonEnd();return}msave();showM('mhub')}
+function seasonEnd(){MG.lg.forEach((Lg,d)=>{if(d===MG.div)return;for(let w=MG.week-1;w<MG.scheds[d].length;w++)for(const[x,y]of MG.scheds[d][w])simPair(Lg[x],Lg[y])});
+ const st=standings(),rk=st.findIndex(t=>t.id===0)+1,d0=MG.div,mult=rk===1?1:rk===2?.6:rk===3?.4:.2,prize=r0(DIVS[d0].prize*mult);
  const SS=DIVS.map((_,d)=>standings(d)),moves=[],lead=leaders(d0)[0],star=stars().slice(0,3);
- for(let d=0;d<BOTTOM;d++){const dn=SS[d][5],up=SS[d+1][0];MG.lg[d]=MG.lg[d].filter(t=>t!==dn).concat(up);MG.lg[d+1]=MG.lg[d+1].filter(t=>t!==up).concat(dn);moves.push(`${up.name} 升上${DIVS[d].s}、${dn.name} 降到${DIVS[d+1].s}`)}
+ const nm=t=>t.id===0?MG.name:t.name;
+ for(let d=0;d<BOTTOM;d++){const k=PROMO[d],dn=SS[d].slice(-k),up=SS[d+1].slice(0,k);MG.lg[d]=MG.lg[d].filter(t=>!dn.includes(t)).concat(up);MG.lg[d+1]=MG.lg[d+1].filter(t=>!up.includes(t)).concat(dn);moves.push(`${up.map(nm).join('、')} 升上${DIVS[d].s}；${dn.map(nm).join('、')} 降到${DIVS[d+1].s}`)}
  const champs=SS.map((x,d)=>`${DIVS[d].s}冠軍：${x[0].id===0?MG.name:x[0].name}`);
  const d1=MG.lg.findIndex(L=>L.some(t=>t.id===0)),champ=rk===1&&d0===0;if(champ)MG.trophies++;if(rk===1)MG.titles.push(`第 ${MG.season} 季 ${DIVS[d0].n}冠軍`);
  MG.money+=prize;const ret=[];
@@ -1197,29 +1224,30 @@ const rkB=v=>`<span class="rk mini" style="background:${RKC[RANK(v)]}">${RANK(v)
 function mCreate(){return`<h3>成立你的排球俱樂部</h3><p class="sub">區域 → 乙級 → 甲級 → 超級 → 世界盃，一路打上世界頂點。</p>
  <div class="lbl">球隊名稱</div><input class="nm" id="cn" maxlength="8" placeholder="例如：晨光排球會" value="${esc(mCreate.n||'')}">
  <div class="lbl">隊服顏色</div><div class="chips">${CLUBCH.map((c,i)=>`<button class="sw${(mCreate.c||0)===i?' on':''}" style="background:${c}" data-m="ccol:${i}" aria-label="顏色 ${i+1}"></button>`).join('')}</div>
- <p class="note">開局有 9 名隨機球員、300 萬資金。一季 10 輪，每個聯賽第 1 名升級、最後一名降級。體力會影響球員表現，過度疲勞容易受傷。</p>
+ <p class="note">開局有 9 名隨機球員、300 萬資金。從 12 隊的區域聯賽開始（一季 11 輪，前 2 名升級）；甲級 8 隊、超級與世界盃各 6 隊。體力會影響球員表現，過度疲勞容易受傷。</p>
  <p class="err" id="merr"></p><button class="go" data-m="mcreate">成立球隊！</button>
  <div class="foot"><button class="lnk" data-m="menu">← 主選單</button></div>`}
 function mHub(){const nm=ourMatch(),o=nm.opp,f=MG.friendly,hurt=MG.lineup.map(byId).filter(p=>p&&p.inj>0),tired=MG.lineup.map(byId).filter(p=>p&&p.cond<50&&!(p.inj>0));
  return`<div class="hdr"><h3>${esc(MG.name)}</h3><span class="tag" style="background:${CLUBCH[MG.color]}">${DIVS[MG.div].n}</span>${MG.trophies?`<span class="tag" style="background:#f0a800">世界冠軍 ×${MG.trophies}</span>`:''}</div>
- <p class="sub">第 ${MG.season} 季 · 第 ${MG.week} / 10 週 · 目前第 ${rankOf(0)} 名（${usT().w} 勝 ${usT().l} 敗）</p>${kpi()}
+ <p class="sub">第 ${MG.season} 季 · 第 ${MG.week} / ${seasonLen()} 週 · 目前第 ${rankOf(0)} 名（${usT().w} 勝 ${usT().l} 敗）</p>${kpi()}
  ${MG.msg?`<div class="say plain">${esc(MG.msg)}</div>`:''}
  <div class="say"><i>本週聯賽</i>第 ${MG.week} 輪 · ${nm.home?'主場':'客場'} vs <b>${esc(o.name)}</b>（實力 <b style="color:${RKC[RANK(o.str)]}">${RANK(o.str)}</b>）<br>戰術：${TACN[MG.tac]} · 訓練：${TRN[MG.train]}${hurt.length?`<br><b style="color:#e8443a">先發傷兵：${hurt.map(p=>esc(p.name)).join('、')}（開賽自動換替補）</b>`:''}${tired.length?`<br><b style="color:#c98a00">疲勞：${tired.map(p=>esc(p.name)).join('、')}</b>`:''}</div>
- <div class="acts"><button class="act" style="background:#ff8a3d" data-m="play:1">觀戰<small>3D 比賽</small></button><button class="act" style="background:#e8604a" data-m="play:0">快速模擬<small>直接出結果</small></button><button class="act" style="background:#8a93a6" data-m="go:moffice:roster">調整陣容<small>先發・舉球</small></button></div>
+ <div class="acts"><button class="act" style="background:#ff8a3d" data-m="play:1">觀戰<small>3D 比賽</small></button><button class="act" style="background:#e8604a" data-m="play:0">快速模擬<small>直接出結果</small></button><button class="act" style="background:#8a93a6" data-m="go:moffice:roster">球員資訊<small>能力・陣容</small></button></div>
  <div class="lbl">設施</div><div class="acts two">
   <button class="act" style="background:#1f9e92" data-m="go:mtrain">練習場<small>訓練菜單・特訓</small></button>
   <button class="act" style="background:#3d7bff" data-m="go:massoc">排球協會<small>${f?'有友誼賽邀請！':'積分・得分榜・明星榜'}</small></button>
   <button class="act" style="background:#8a63ff" data-m="go:moffice:market">球探市場<small>簽約新球員</small></button>
   <button class="act" style="background:#ff5d8f" data-m="go:moffice:fac">球隊事務所<small>設施・餐廳・戰術</small></button></div>
  <div class="foot"><button class="lnk" data-m="menu">← 主選單</button><button class="lnk" data-m="mreset">${mResetArm?'確定解散球隊？再按一次':'解散球隊重新開始'}</button></div>`}
-function mTrain(){const gf=1+.25*(MG.fac.gym-1),sp=mSpP&&byId(mSpP);
- return`<h3>練習場</h3><p class="sub">訓練設施 Lv.${MG.fac.gym} · 成長效率 ×${gf.toFixed(2)} · 餐廳每週體力 +${REC[MG.fac.food]}</p>
- <div class="lbl">本週訓練菜單（比賽後全隊套用）</div><div class="chips">${Object.keys(TRN).map(k=>`<button class="chip${MG.train===k?' on':''}" data-m="trn:${k}">${TRN[k]}</button>`).join('')}</div>
- <p class="note">攻擊＝攻擊、跳躍；體能＝速度、跳躍；休養＝體力額外 +20 且不會練習受傷。傷兵不參加訓練。</p>
- <div class="lbl">個人特訓（每週一次，30 萬，該項 +3）</div>
- <div class="chips cs">${MG.roster.map(p=>`<button class="chip${mSpP===p.id?' on':''}" data-m="spp:${p.id}"${p.inj>0?' disabled':''}>${esc(p.name)}</button>`).join('')}</div>
- <div class="chips cs" style="margin-top:6px">${ATTR.map(([k,n])=>`<button class="chip${mSpA===k?' on':''}" data-m="spa:${k}">${n}${sp?' '+r0(sp[k]):''}</button>`).join('')}</div>
- <button class="go alt" data-m="spdo"${!sp||MG.spDone||MG.money<30?' disabled':''}>${MG.spDone?'本週已特訓':'進行特訓（30 萬）'}</button>
+function mTrain(){const gf=1+.25*(MG.fac.gym-1),wk=MG.season*100+MG.week;
+ const T=[['atk','攻擊','攻擊・跳躍'],['def','防守','防守'],['set','舉球','舉球'],['srv','發球','發球'],['phy','體能','速度・跳躍'],['rest','休養','體力 +20']];
+ return`<h3>練習場</h3><p class="sub">設施 Lv.${MG.fac.gym}（成長 ×${gf.toFixed(2)}）· 餐廳每週體力 +${REC[MG.fac.food]} · 資金 ${MG.money} 萬</p>
+ <div class="lbl">① 全隊訓練菜單　<small>本週比賽結束後全隊套用</small></div>
+ <div class="tgrid">${T.map(([k,n,d])=>`<button class="tbtn${MG.train===k?' on':''}" data-m="trn:${k}"><b>${n}</b><small>${d}</small></button>`).join('')}</div>
+ <div class="lbl">② 個人特訓　<small>每人每週一項・每次 5 萬・該項 +3</small></div>
+ <div class="sphead"><span></span><span>攻</span><span>守</span><span>舉</span><span>發</span><span>速</span><span>跳</span></div>
+ ${MG.roster.map(p=>{const done=p.spWk===wk,h=p.inj>0;return`<div class="sprow${done?' done':''}"><span class="spn"><em class="no">${p.num}</em>${esc(p.name)}<small>${done?'本週已特訓':h?'受傷中':POSN[p.pos]+' · '+p.age+' 歲'}</small></span><div class="spb">${ATTR.map(([k,n])=>`<button data-m="sp:${p.id}:${k}"${done||h||MG.money<5?' disabled':''} aria-label="${esc(p.name)} ${n}特訓">${r0(p[k])}</button>`).join('')}</div></div>`}).join('')}
+ <p class="note">點數字就會花 5 萬特訓那一項。年輕球員成長快，超過 30 歲會開始退步；傷兵不參加訓練。</p>
  <div class="foot"><button class="lnk" data-m="go:mhub">← 回到俱樂部</button></div>`}
 function mAssoc(){const f=MG.friendly,d=mLg??MG.div,av=[['tbl','積分榜'],['score','得分榜'],['star','明星榜'],['fr','友誼賽']];
  const lgChips=`<div class="chips cs">${DIVS.map((D,k)=>`<button class="chip${d===k?' on':''}" data-m="lgv:${k}">${D.s}${k===MG.div?'★':''}</button>`).join('')}</div>`;let body='';
@@ -1229,17 +1257,19 @@ function mAssoc(){const f=MG.friendly,d=mLg??MG.div,av=[['tbl','積分榜'],['sc
  else body=(f?`<div class="say"><i>邀請</i>「${esc(f.name)}」（實力 ${RANK(f.str)}）想打一場 15 分友誼賽。門票減半、球迷增加，但會消耗體力，也可能受傷。</div>
  <div class="acts two"><button class="act" style="background:#ff8a3d" data-m="fr:1">接受・觀戰</button><button class="act" style="background:#e8604a" data-m="fr:0">接受・快速模擬</button></div>`:'<p class="note">目前沒有友誼賽邀請，過幾週再來看看。</p>')+
   (MG.hist.length?`<div class="lbl">歷年成績</div><p class="note">${MG.hist.slice(-6).map(h=>`第 ${h.s} 季 ${DIVS[h.d].n} 第 ${h.rk} 名`).join('<br>')}</p>`:'');
- return`<h3>排球協會</h3><p class="sub">第 ${MG.season} 季 · 已賽 ${MG.week-1} 輪 · 第 1 名升級、第 6 名降級</p>
+ return`<h3>排球協會</h3><p class="sub">第 ${MG.season} 季 · ${DIVS[d].n} ${MG.lg[d].length} 隊 · 已賽 ${Math.min(MG.week-1,MG.scheds[d].length)} / ${MG.scheds[d].length} 輪 · ${d>0?`前 ${PROMO[d-1]} 名升級`:'最高殿堂'}${d<BOTTOM?`、後 ${PROMO[d]} 名降級`:''}</p>
  <div class="tabs">${av.map(([k,n])=>`<button class="${mAv===k?'on':''}" data-m="av:${k}">${n}${k==='fr'&&f?'！':''}</button>`).join('')}</div>${body}
  <div class="foot"><button class="lnk" data-m="go:mhub">← 回到俱樂部</button></div>`}
-function mOffice(){const tabs=[['roster','陣容'],['market','球探市場'],['fac','設施'],['tac','戰術']];let body='';
+function mOffice(){const tabs=[['roster','球員資訊'],['market','球探市場'],['fac','設施'],['tac','戰術']];let body='';
  if(mTab==='roster'){
-  body=`<div class="lbl">先發（舉球員橘色）</div><div class="chips">${MG.lineup.map((id,i)=>{const p=byId(id);return`<span class="tag" style="background:${p.inj>0?'#e8443a':i===1?'#ff8a3d':'#3d7bff'}">${i===1?'舉 ':''}#${p.num} ${esc(p.name)}${p.inj>0?' 傷':''}</span>`}).join('')}</div>
-  <div class="lbl">球員名單 ${MG.roster.length}/12（點選查看）</div><div class="rgrid">${MG.roster.map(p=>{const o=ovr(p),i=MG.lineup.indexOf(p.id);return`<button class="prow${mSel===p.id?' on':''}${i>=0?' st1':''}${i===1?' st2':''}" data-m="sel:${p.id}"><span><em class="no">${p.num}</em>${esc(p.name)}${p.inj>0?` <b class="inj">傷${p.inj}</b>`:''}<small>${POSN[p.pos]} · ${p.age}歲 · <b style="color:${condC(p.cond)}">體${r0(p.cond)}</b></small></span><span class="rk" style="background:${RKC[RANK(o)]}">${RANK(o)}</span></button>`}).join('')}</div>
-  ${(()=>{const p=mSel&&byId(mSel);if(!p)return'';const o=ovr(p),i=MG.lineup.indexOf(p.id),h=p.inj>0;return`<div class="lbl">#${p.num} ${esc(p.name)}（${POSN[p.pos]}）${h?` <b class="inj">受傷中・還要 ${p.inj} 週</b>`:''}</div><div class="detail"><div class="crow"><b>名字</b><input class="nm ns" id="pn" maxlength="6" value="${esc(p.name)}" aria-label="球員名字"></div><div class="crow"><b>背號</b><input class="nm ns" id="pnum" type="number" inputmode="numeric" min="0" max="99" value="${p.num}" aria-label="背號"><button class="buy" data-m="pedit:${p.id}">儲存</button></div><p class="err" id="perr"></p>${attrRows(p)}
+  const narrow=innerWidth<760;if(!narrow&&!(mSel&&byId(mSel)))mSel=MG.roster[0].id;
+  const list=(narrow?'':`<div class="lbl">先發（藍）・舉球員（橘）</div>`)+(narrow?'':`<div class="chips">${MG.lineup.map((id,i)=>{const p=byId(id);return`<span class="tag" style="background:${p.inj>0?'#e8443a':i===1?'#ff8a3d':'#3d7bff'}">${i===1?'舉 ':''}#${p.num} ${esc(p.name)}${p.inj>0?' 傷':''}</span>`}).join('')}</div>`)+`
+  <div class="lbl">球員名單 ${MG.roster.length}/12　<small>藍＝先發・橘＝舉球員</small></div><div class="plist">${MG.roster.map(p=>{const o=ovr(p),i=MG.lineup.indexOf(p.id);return`<button class="pl${mSel===p.id&&!narrow?' on':''}${i>=0?' st1':''}${i===1?' st2':''}" data-m="sel:${p.id}"><em class="no">${p.num}</em><span class="pn">${esc(p.name)}${p.inj>0?` <b class="inj">傷${p.inj}</b>`:''}<small>${POSN[p.pos]} · ${p.age} 歲 · <b style="color:${condC(p.cond)}">體力 ${r0(p.cond)}</b></small></span>${i===1?'<span class="tag" style="background:#ff8a3d">舉球</span>':i>=0?'<span class="tag">先發</span>':'<span></span>'}<span class="rk" style="background:${RKC[RANK(o)]}">${RANK(o)}</span></button>`}).join('')}</div>
+  <button class="go alt" data-m="auto">自動排出最佳陣容</button>`;
+  const det=(()=>{const p=mSel&&byId(mSel);if(!p)return'';const o=ovr(p),i=MG.lineup.indexOf(p.id),h=p.inj>0;return`<div class="lbl">#${p.num} ${esc(p.name)}（${POSN[p.pos]}）${h?` <b class="inj">受傷中・還要 ${p.inj} 週</b>`:''}</div><div class="detail"><div class="crow"><b>名字</b><input class="nm ns" id="pn" maxlength="6" value="${esc(p.name)}" aria-label="球員名字"></div><div class="crow"><b>背號</b><input class="nm ns" id="pnum" type="number" inputmode="numeric" min="0" max="99" value="${p.num}" aria-label="背號"><button class="buy" data-m="pedit:${p.id}">儲存</button></div><p class="err" id="perr"></p>${attrRows(p)}
    <p class="note">綜合 ${o} · 潛力 ${RANK(p.pot)} · 體力 ${r0(p.cond)}（目前能力 ×${(.7+.3*p.cond/100).toFixed(2)}）· 本季 ${ptsOf(p)} 分 · 週薪 ${salary(p)} 萬 · 身價 ${price(p)} 萬</p>
-   <div class="chips">${i>=0?`<button class="chip" data-m="bench:${p.id}">移出先發</button>`:`<button class="chip" data-m="start:${p.id}"${h?' disabled':''}>設為先發</button>`}${i!==1?`<button class="chip" data-m="setr:${p.id}"${h?' disabled':''}>設為舉球員</button>`:''}${MG.roster.length>7?`<button class="chip" data-m="sell:${p.id}">出售（+${r0(price(p)*.7)} 萬）</button>`:''}</div></div>`})()}
-  <button class="go alt" data-m="auto">自動排出最佳陣容</button>`}
+   <div class="chips">${i>=0?`<button class="chip" data-m="bench:${p.id}">移出先發</button>`:`<button class="chip" data-m="start:${p.id}"${h?' disabled':''}>設為先發</button>`}${i!==1?`<button class="chip" data-m="setr:${p.id}"${h?' disabled':''}>設為舉球員</button>`:''}${MG.roster.length>7?`<button class="chip" data-m="sell:${p.id}">出售（+${r0(price(p)*.7)} 萬）</button>`:''}</div></div>`})();
+  body=narrow?(mSel&&byId(mSel)?`<button class="lnk" data-m="unsel">← 返回球員名單</button>${det}`:list):`<div class="rlay"><div>${list}</div><div class="rdet">${det}</div></div>`}
  else if(mTab==='market')body=`<p class="note">每兩週更新。A、B 級好手很少出現，身價也較高。名單上限 12 人，資金 ${MG.money} 萬。</p>${MG.market.map(p=>{const o=ovr(p);return`<div class="shop"><span>${esc(p.name)} ${rkB(o)}<small>${POSN[p.pos]} · ${p.age} 歲 · 潛力 ${RANK(p.pot)} · 週薪 ${salary(p)} 萬<br>攻 ${r0(p.atk)} 守 ${r0(p.def)} 舉 ${r0(p.set)} 發 ${r0(p.srv)} 速 ${r0(p.spd)} 跳 ${r0(p.jmp)}</small></span><button class="buy" data-m="buy:${p.id}"${MG.money<price(p)||MG.roster.length>=12?' disabled':''}>${price(p)} 萬</button></div>`}).join('')||'<p class="note">本期名單已簽完。</p>'}`;
  else if(mTab==='fac'){const a=MG.fac.arena,g=MG.fac.gym,f=MG.fac.food;
   const row=(n,lv,desc,cost,act)=>`<div class="shop"><span>${n} Lv.${lv}<small>${desc}</small></span>${lv<5?`<button class="buy" data-m="${act}"${MG.money<cost?' disabled':''}>升級 ${cost} 萬</button>`:'<b>已滿級</b>'}</div>`;
@@ -1262,6 +1292,8 @@ function mSeason(){const s=MG.sres,up=s.d1<s.d0,dn=s.d1>s.d0;
  <div class="say"><i>新賽季</i>下一季在 <b>${DIVS[s.d1].n}</b> 出賽。全隊年齡 +1${s.ret.length?`，${s.ret.map(esc).join('、')} 宣布退休`:''}。</div>
  <button class="go" data-m="go:mhub">開始第 ${MG.season} 季</button>`}
 function showM(s){stopDemo();mScreen=s;if(s!=='mhub')mResetArm=false;
+ $('#mv').classList.toggle('full',['moffice','mtrain','massoc'].includes(s));
+ $('#mvCard').classList.toggle('wide',s==='moffice'&&mTab==='roster'&&innerWidth>=760);
  $('#mvCard').innerHTML=s==='mcreate'?mCreate():s==='mhub'?mHub():s==='mtrain'?mTrain():s==='massoc'?mAssoc():s==='moffice'?mOffice():s==='mresult'?mResult():mSeason();
  const v=$('#mv');v.classList.remove('hide');if(showM.last!==s){v.scrollTop=0;showM.last=s}
  $('#menu').classList.add('hide');$('#cv').classList.add('hide');$('#over').classList.add('hide');mode='mgr';mBuild();fit($('#mvCard'))}
@@ -1271,13 +1303,14 @@ function mDrop(){(mPrev||[]).forEach(o=>scene.remove(o.m.g));mPrev=[];mPrev.key=
 const MACT={
  ccol:i=>{mCreate.c=+i;showM('mcreate')},
  mcreate:()=>{const n=(mCreate.n||'').trim();if(!n){$('#merr').textContent='請先幫球隊取個名字。';return}newClub(n,mCreate.c||0);msave();showM('mhub')},
- go:(s,t)=>{if(t)mTab=t;if(s==='massoc'){mLg=null;mAv=MG.friendly?'fr':'tbl'}showM(s)},tab:t=>{mTab=t;showM('moffice')},av:k=>{mAv=k;showM('massoc')},
+ go:(s,t)=>{if(t)mTab=t;if(s==='moffice'&&innerWidth<760)mSel=null;if(s==='massoc'){mLg=null;mAv=MG.friendly?'fr':'tbl'}showM(s)},tab:t=>{mTab=t;showM('moffice')},av:k=>{mAv=k;showM('massoc')},
  play:w=>{const nm=ourMatch();startMgrMatch(nm.opp,nm.home,false,w==='1')},
  fr:w=>{if(MG.friendly)startMgrMatch(MG.friendly,true,true,w==='1')},
  wend:weekEnd,
  trn:k=>{MG.train=k;msave();showM('mtrain')},spp:id=>{mSpP=id;showM('mtrain')},spa:k=>{mSpA=k;showM('mtrain')},
+ sp:(id,k)=>{const p=byId(id),wk=MG.season*100+MG.week;if(!p||p.inj>0||p.spWk===wk||MG.money<5)return;MG.money-=5;p.spWk=wk;p[k]=Math.min(99,p[k]+3);MG.msg=`${p.name} 完成${ATTR.find(a=>a[0]===k)[1]}特訓（+3）。`;msave();showM('mtrain')},
  spdo:()=>{const p=byId(mSpP);if(!p||p.inj>0||MG.spDone||MG.money<30)return;MG.money-=30;MG.spDone=1;p[mSpA]=Math.min(99,p[mSpA]+3);MG.msg=`${p.name} 完成${ATTR.find(a=>a[0]===mSpA)[1]}特訓（+3）。`;msave();showM('mtrain')},
- sel:id=>{mSel=mSel===id?null:id;showM('moffice')},
+ sel:id=>{mSel=id;showM('moffice')},unsel:()=>{mSel=null;showM('moffice')},
  start:id=>{setStarter(id);msave();showM('moffice')},bench:id=>{benchIt(id);msave();showM('moffice')},setr:id=>{makeSetter(id);msave();showM('moffice')},
  auto:()=>{autoLineup();msave();showM('moffice')},
  pedit:id=>{const p=byId(id);if(!p)return;const n=$('#pn').value.trim(),v=$('#pnum').value.trim(),k=+v,e=$('#perr');
@@ -1327,7 +1360,7 @@ function renderAcct(){const el=$('#acct');if(!el)return;const F=window.FB;let h;
  else if(F.offline)h='<span class="ac-s">離線模式：存檔只在這台裝置</span>';
  else if(!F.ready)h='<span class="ac-s">登入服務暫時連不上，先用這台裝置的存檔</span>';
  else if(!CLOUD.user)h='<button class="ac-b g" data-ac="in">用 Google 登入・雲端存檔</button>';
- else h=`<span class="ac-s"><b>${esc(acctName())}</b>　${CLOUD.syncing?'同步中…':'已雲端同步'}</span><button class="ac-b" data-ac="lb">家族排行榜</button><button class="ac-b" data-ac="out">登出</button>`;
+ else h=`<span class="ac-s"><b>${esc(acctName())}</b>　${CLOUD.syncing?'同步中…':'已雲端同步'}</span><button class="ac-b" data-ac="out">登出</button>`;
  el.innerHTML=h+(CLOUD.msg?`<div class="ac-m">${esc(CLOUD.msg)}</div>`:'');fit($('#menu .card'))}
 const AUTHERR={'auth/unauthorized-domain':'這個網址還沒加進 Firebase 的「授權網域」','auth/popup-closed-by-user':'登入視窗被關掉了','auth/operation-not-allowed':'Firebase 還沒開啟 Google 登入','auth/network-request-failed':'網路連線失敗'};
 $('#acct').addEventListener('click',async e=>{const b=e.target.closest('[data-ac]');if(!b)return;const a=b.dataset.ac;
@@ -1337,7 +1370,10 @@ $('#acct').addEventListener('click',async e=>{const b=e.target.closest('[data-ac
 addEventListener('fbauth',e=>{const was=CLOUD.user&&CLOUD.user.uid;CLOUD.user=e.detail||null;if(CLOUD.user&&CLOUD.user.uid!==was)CLOUD.syncing=cloudSync();renderAcct()});
 // ---- leaderboard ----
 let lbTab='career',lbRows=[];
-async function openBoard(){$('#lbv').classList.remove('hide');$('#lbCard').innerHTML='<h3>家族排行榜</h3><p class="sub">讀取中…</p>';
+function boardGate(){const F=window.FB;$('#lbv').classList.remove('hide');
+ $('#lbCard').innerHTML=`<h3>排行榜</h3><p class="sub">${F&&F.ready?'登入後就能看到家人的生涯與經理人成績，你的成績也會一起上榜。':'這個版本還沒設定雲端功能，排行榜暫時無法使用。'}</p>${F&&F.ready?'<button class="go" data-lb="login">用 Google 登入</button>':''}<div class="foot"><button class="lnk" data-lb="close">← 關閉</button></div>`;fit($('#lbCard'))}
+$('#lbBtn').addEventListener('click',()=>{cloudOn()?openBoard():boardGate()});
+async function openBoard(){$('#lbv').classList.remove('hide');$('#lbCard').innerHTML='<h3>排行榜</h3><p class="sub">讀取中…</p>';
  await waitSync();await cloudFlush();try{await FB.submit(boardData())}catch(e){}
  try{lbRows=await FB.board()}catch(e){lbRows=null}renderBoard()}
 function renderBoard(){const me=CLOUD.user&&CLOUD.user.uid;let rows='';
@@ -1346,12 +1382,13 @@ function renderBoard(){const me=CLOUD.user&&CLOUD.user.uid;let rows='';
   rows=r.length?`<table class="lg"><thead><tr><th>#</th><th>玩家</th><th>球員</th><th>評價</th><th>戰績</th></tr></thead><tbody>${r.map((x,i)=>`<tr class="${x.id===me?'us':''}"><td>${i+1}</td><td>${esc(x.name)}</td><td>${esc(x.career.n)}${x.career.ch?' <small>全國冠軍</small>':''}</td><td><span class="rk mini" style="background:${RKC[RANK(x.career.ov)]}">${RANK(x.career.ov)}</span> ${x.career.ov}</td><td>${x.career.w}-${x.career.l}</td></tr>`).join('')}</tbody></table>`:'<p class="note">還沒有人玩生涯模式。</p>'}
  else{const r=lbRows.filter(x=>x.mgr).sort((a,b)=>b.mgr.tr-a.mgr.tr||a.mgr.best-b.mgr.best||a.mgr.div-b.mgr.div);
   rows=r.length?`<table class="lg"><thead><tr><th>#</th><th>玩家</th><th>球隊</th><th>最高聯賽</th><th>世界冠軍</th></tr></thead><tbody>${r.map((x,i)=>`<tr class="${x.id===me?'us':''}"><td>${i+1}</td><td>${esc(x.name)}</td><td>${esc(x.mgr.club)}<small> 第${x.mgr.s}季</small></td><td>${(DIVS[x.mgr.best]||DIVS[BOTTOM]).s}</td><td>${x.mgr.tr}</td></tr>`).join('')}</tbody></table>`:'<p class="note">還沒有人玩經理人模式。</p>'}
- $('#lbCard').innerHTML=`<h3>家族排行榜</h3><p class="sub">所有登入過的玩家都會出現在這裡</p>
+ $('#lbCard').innerHTML=`<h3>排行榜</h3><p class="sub">所有登入過的家人都會出現在這裡</p>
  <div class="tabs"><button class="${lbTab==='career'?'on':''}" data-lb="t:career">生涯模式</button><button class="${lbTab==='mgr'?'on':''}" data-lb="t:mgr">經理人模式</button></div>${rows}
  <div class="crow" style="margin-top:10px"><b>暱稱</b><input class="nm ns" id="nick" maxlength="12" value="${esc(acctName())}" aria-label="暱稱"><button class="buy" data-lb="nick">儲存</button></div>
  <div class="foot"><button class="lnk" data-lb="close">← 關閉</button></div>`;fit($('#lbCard'))}
 $('#lbCard').addEventListener('click',async e=>{const b=e.target.closest('[data-lb]');if(!b)return;const a=b.dataset.lb;
  if(a==='close')$('#lbv').classList.add('hide');
+ if(a==='login'){try{await FB.signIn();await new Promise(r=>setTimeout(r,300));if(cloudOn())openBoard()}catch(er){acctNote('登入失敗：'+(AUTHERR[er&&er.code]||er&&er.code||'請再試一次'));$('#lbv').classList.add('hide')}}
  if(a.startsWith('t:')){lbTab=a.slice(2);renderBoard()}
  if(a==='nick'){const v=$('#nick').value.trim().slice(0,12);if(!v)return;try{localStorage.setItem('bump_nick',v)}catch(er){}renderAcct();await FB.submit(boardData()).catch(()=>{});lbRows=await FB.board().catch(()=>lbRows);renderBoard()}});
 renderAcct();
