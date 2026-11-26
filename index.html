@@ -72,7 +72,9 @@ body{font:16px/1.5 "Baloo 2","Noto Sans TC","PingFang TC","Microsoft JhengHei",s
 .ac-b.g{background:#fff;box-shadow:0 0 0 2px #d6dbe3;padding:0 18px}.ac-m{width:100%;text-align:center;color:#e8443a;font-weight:700;font-size:13px}
 #lbv{z-index:5}
 #chatBtn{position:fixed;left:calc(env(safe-area-inset-left) + 12px);top:calc(env(safe-area-inset-top) + 12px);z-index:6;display:none;border:0;border-radius:999px;background:#fff;color:#1d2433;font:inherit;font-weight:800;min-height:42px;padding:0 16px;box-shadow:0 4px 0 rgba(0,0,0,.15)}
-#chatBtn.show{display:block}body[data-m=game] #chatBtn{display:none}
+#chatBtn.show{display:block}
+body.chatfab .ov{padding-top:64px}
+@media (max-aspect-ratio:1/1){body.chatfab .ov.side{padding-top:23vh}body.chatfab .ov.side.full{padding-top:60px}body.chatfab #menu{padding-top:64px}}body[data-m=game] #chatBtn{display:none}
 #chatN{position:absolute;right:-6px;top:-6px;min-width:22px;height:22px;border-radius:11px;background:#e8443a;color:#fff;font-size:12px;display:none;place-items:center;padding:0 5px}
 #chatv{position:fixed;z-index:7;top:0;right:0;bottom:0;width:min(380px,100vw);background:#fff;display:flex;flex-direction:column;box-shadow:-6px 0 24px rgba(0,0,0,.18);padding:calc(env(safe-area-inset-top) + 10px) 12px calc(env(safe-area-inset-bottom) + 8px)}
 #chatv.hide{display:none}body[data-m=game]:not(.dock) #chatv{display:none}
@@ -95,7 +97,7 @@ body.dock :is(.ov,#hud,#banner){right:340px}body.dock :is(#cue,#mgrbar){left:cal
 @media (max-height:520px) and (min-aspect-ratio:1/1){.ov.side .card{width:min(760px,74vw);column-count:2;column-gap:20px}.ov.side .card>*{break-inside:avoid}.ov.side .card h3{column-span:none}}
 @media (max-aspect-ratio:1/1){.cv h3{font-size:24px}.say{padding:8px 10px;margin:8px 0;font-size:14px}.act{min-height:54px;font-size:15px}.st{margin:4px 0}.lbl{margin:8px 0 3px}}
 .go.violet{background:#8a63ff;box-shadow:0 5px 0 #6a45d8;color:#fff}.go.violet:active{box-shadow:0 2px 0 #6a45d8}
-#mvCard.wide{width:min(960px,94vw)}
+#mvCard.wide{width:min(960px,100%)}
 @media (max-aspect-ratio:1/1){.ov.side.full{padding-top:8px}}
 .rlay{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:20px;align-items:start}.rdet{position:sticky;top:0}
 .plist{display:flex;flex-direction:column;gap:6px}
@@ -1260,9 +1262,11 @@ function mAssoc(){const f=MG.friendly,d=mLg??MG.div,av=[['tbl','積分榜'],['sc
  return`<h3>排球協會</h3><p class="sub">第 ${MG.season} 季 · ${DIVS[d].n} ${MG.lg[d].length} 隊 · 已賽 ${Math.min(MG.week-1,MG.scheds[d].length)} / ${MG.scheds[d].length} 輪 · ${d>0?`前 ${PROMO[d-1]} 名升級`:'最高殿堂'}${d<BOTTOM?`、後 ${PROMO[d]} 名降級`:''}</p>
  <div class="tabs">${av.map(([k,n])=>`<button class="${mAv===k?'on':''}" data-m="av:${k}">${n}${k==='fr'&&f?'！':''}</button>`).join('')}</div>${body}
  <div class="foot"><button class="lnk" data-m="go:mhub">← 回到俱樂部</button></div>`}
+const roomW=()=>innerWidth-(document.body.classList.contains('dock')?340:0)-32;
+const wideOK=()=>roomW()>=760;
 function mOffice(){const tabs=[['roster','球員資訊'],['market','球探市場'],['fac','設施'],['tac','戰術']];let body='';
  if(mTab==='roster'){
-  const narrow=innerWidth<760;if(!narrow&&!(mSel&&byId(mSel)))mSel=MG.roster[0].id;
+  const narrow=!wideOK();if(!narrow&&!(mSel&&byId(mSel)))mSel=MG.roster[0].id;
   const list=(narrow?'':`<div class="lbl">先發（藍）・舉球員（橘）</div>`)+(narrow?'':`<div class="chips">${MG.lineup.map((id,i)=>{const p=byId(id);return`<span class="tag" style="background:${p.inj>0?'#e8443a':i===1?'#ff8a3d':'#3d7bff'}">${i===1?'舉 ':''}#${p.num} ${esc(p.name)}${p.inj>0?' 傷':''}</span>`}).join('')}</div>`)+`
   <div class="lbl">球員名單 ${MG.roster.length}/12　<small>藍＝先發・橘＝舉球員</small></div><div class="plist">${MG.roster.map(p=>{const o=ovr(p),i=MG.lineup.indexOf(p.id);return`<button class="pl${mSel===p.id&&!narrow?' on':''}${i>=0?' st1':''}${i===1?' st2':''}" data-m="sel:${p.id}"><em class="no">${p.num}</em><span class="pn">${esc(p.name)}${p.inj>0?` <b class="inj">傷${p.inj}</b>`:''}<small>${POSN[p.pos]} · ${p.age} 歲 · <b style="color:${condC(p.cond)}">體力 ${r0(p.cond)}</b></small></span>${i===1?'<span class="tag" style="background:#ff8a3d">舉球</span>':i>=0?'<span class="tag">先發</span>':'<span></span>'}<span class="rk" style="background:${RKC[RANK(o)]}">${RANK(o)}</span></button>`}).join('')}</div>
   <button class="go alt" data-m="auto">自動排出最佳陣容</button>`;
@@ -1293,17 +1297,18 @@ function mSeason(){const s=MG.sres,up=s.d1<s.d0,dn=s.d1>s.d0;
  <button class="go" data-m="go:mhub">開始第 ${MG.season} 季</button>`}
 function showM(s){stopDemo();mScreen=s;if(s!=='mhub')mResetArm=false;
  $('#mv').classList.toggle('full',['moffice','mtrain','massoc'].includes(s));
- $('#mvCard').classList.toggle('wide',s==='moffice'&&mTab==='roster'&&innerWidth>=760);
+ $('#mvCard').classList.toggle('wide',s==='moffice'&&mTab==='roster'&&wideOK());
  $('#mvCard').innerHTML=s==='mcreate'?mCreate():s==='mhub'?mHub():s==='mtrain'?mTrain():s==='massoc'?mAssoc():s==='moffice'?mOffice():s==='mresult'?mResult():mSeason();
  const v=$('#mv');v.classList.remove('hide');if(showM.last!==s){v.scrollTop=0;showM.last=s}
  $('#menu').classList.add('hide');$('#cv').classList.add('hide');$('#over').classList.add('hide');mode='mgr';mBuild();fit($('#mvCard'))}
 function mBuild(){const key=MG?MG.color+'|'+MG.lineup.map(id=>id+'#'+(byId(id)||{}).num).join(','):'none';if(mPrev.key===key)return;mDrop();if(!MG)return;
  mPrev=MG.lineup.map((id,i)=>{const p=byId(id),m=makePlayer(CLUBC[MG.color],p.look,p.num??[7,3,11,1,9,5][i]);m.g.position.set(-6.5,0,(i-2.5)*1.05);scene.add(m.g);return{m,ph:R()*6}});mPrev.key=key}
+let mRz=0;addEventListener('resize',()=>{clearTimeout(mRz);mRz=setTimeout(()=>{if(mode==='mgr'&&mScreen==='moffice'&&mTab==='roster')showM('moffice')},150)});
 function mDrop(){(mPrev||[]).forEach(o=>scene.remove(o.m.g));mPrev=[];mPrev.key=null}
 const MACT={
  ccol:i=>{mCreate.c=+i;showM('mcreate')},
  mcreate:()=>{const n=(mCreate.n||'').trim();if(!n){$('#merr').textContent='請先幫球隊取個名字。';return}newClub(n,mCreate.c||0);msave();showM('mhub')},
- go:(s,t)=>{if(t)mTab=t;if(s==='moffice'&&innerWidth<760)mSel=null;if(s==='massoc'){mLg=null;mAv=MG.friendly?'fr':'tbl'}showM(s)},tab:t=>{mTab=t;showM('moffice')},av:k=>{mAv=k;showM('massoc')},
+ go:(s,t)=>{if(t)mTab=t;if(s==='moffice'&&!wideOK())mSel=null;if(s==='massoc'){mLg=null;mAv=MG.friendly?'fr':'tbl'}showM(s)},tab:t=>{mTab=t;showM('moffice')},av:k=>{mAv=k;showM('massoc')},
  play:w=>{const nm=ourMatch();startMgrMatch(nm.opp,nm.home,false,w==='1')},
  fr:w=>{if(MG.friendly)startMgrMatch(MG.friendly,true,true,w==='1')},
  wend:weekEnd,
@@ -1406,8 +1411,8 @@ function chatStart(){chatStop();if(!cloudOn()||!FB.chatSub)return;CHAT.err='';
 function chatStop(){if(CHAT.unsub){CHAT.unsub();CHAT.unsub=null}CHAT.msgs=[];renderChat()}
 function chatUnread(){if(!CLOUD.user)return 0;return CHAT.msgs.filter(m=>m.uid!==CLOUD.user.uid&&tsMs(m)>CHAT.seen).length}
 const hhmm=t=>{const d=new Date(t);return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')};
-function renderChat(){const btn=$('#chatBtn');if(!btn)return;const on=cloudOn(),dk=dockOn();btn.classList.toggle('show',on&&!dk);
- if(document.body.classList.contains('dock')!==dk){document.body.classList.toggle('dock',dk);resize();setTimeout(fitAll,30);renderChat.first=true}
+function renderChat(){const btn=$('#chatBtn');if(!btn)return;const on=cloudOn(),dk=dockOn();btn.classList.toggle('show',on&&!dk);if(document.body.classList.contains('chatfab')!==(on&&!dk)){document.body.classList.toggle('chatfab',on&&!dk);setTimeout(fitAll,30)}
+ if(document.body.classList.contains('dock')!==dk){document.body.classList.toggle('dock',dk);resize();setTimeout(()=>{if(mode==='mgr'&&mScreen==='moffice')showM('moffice');fitAll()},30);renderChat.first=true}
  const open=CHAT.open||dk;$('#chatX').textContent=dk?'收合':'關閉';
  if(open){CHAT.seen=Math.max(CHAT.seen,...CHAT.msgs.map(tsMs),CHAT.seen);try{localStorage.setItem('bump_chat_seen',CHAT.seen)}catch(e){}}
  const n=chatUnread();$('#chatN').textContent=n>9?'9+':n;$('#chatN').style.display=n?'grid':'none';
